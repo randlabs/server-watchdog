@@ -1,0 +1,27 @@
+# github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a
+github.com/asaskevich/govalidator
+# github.com/buaazp/fasthttprouter v0.1.1
+github.com/buaazp/fasthttprouter
+# github.com/gookit/color v1.2.0
+github.com/gookit/color
+# github.com/klauspost/compress v1.8.2
+github.com/klauspost/compress/flate
+github.com/klauspost/compress/gzip
+github.com/klauspost/compress/zlib
+# github.com/klauspost/cpuid v1.2.1
+github.com/klauspost/cpuid
+# github.com/mitchellh/go-ps v0.0.0-20190716172923-621e5597135b
+github.com/mitchellh/go-ps
+# github.com/randlabs/rundown-protection v0.0.0-20191025161028-f50df8d30c4c
+github.com/randlabs/rundown-protection
+# github.com/ricochet2200/go-disk-usage v0.0.0-20150921141558-f0d1b743428f
+github.com/ricochet2200/go-disk-usage/du
+# github.com/valyala/bytebufferpool v1.0.0
+github.com/valyala/bytebufferpool
+# github.com/valyala/fasthttp v1.5.0
+github.com/valyala/fasthttp
+github.com/valyala/fasthttp/fasthttputil
+github.com/valyala/fasthttp/reuseport
+github.com/valyala/fasthttp/stackless
+# github.com/valyala/tcplisten v0.0.0-20161114210144-ceec8f93295a
+github.com/valyala/tcplisten

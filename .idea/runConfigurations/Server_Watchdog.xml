@@ -1,0 +1,13 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Server Watchdog" type="GoApplicationRunConfiguration" factoryName="Go Application" activateToolWindowBeforeRun="false">
+    <module name="server-watchdog" />
+    <working_directory value="$PROJECT_DIR$/bin" />
+    <go_parameters value="-i" />
+    <parameters value="--settings ../config/settings.json" />
+    <kind value="DIRECTORY" />
+    <filePath value="$PROJECT_DIR$/" />
+    <directory value="$PROJECT_DIR$/src" />
+    <output_directory value="$PROJECT_DIR$/bin" />
+    <method v="2" />
+  </configuration>
+</component>
