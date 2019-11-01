@@ -14,10 +14,10 @@ import (
 //------------------------------------------------------------------------------
 
 type WebCheckerModule struct {
-	shutdownSignal chan bool
-	websList []WebItem
-	r rp.RundownProtection
-	checkDone chan struct{}
+	shutdownSignal chan struct{}
+	websList       []WebItem
+	r              rp.RundownProtection
+	checkDone      chan struct{}
 }
 
 type WebItem struct {
@@ -39,7 +39,7 @@ var webCheckerModule *WebCheckerModule
 func WebCheckerStart() error {
 	//initialize module
 	webCheckerModule = &WebCheckerModule{}
-	webCheckerModule.shutdownSignal = make(chan bool, 1)
+	webCheckerModule.shutdownSignal = make(chan struct{})
 
 	//build webs list from settings
 	webCheckerModule.websList = make([]WebItem, len(settings.Config.Webs))
@@ -57,7 +57,7 @@ func WebCheckerStart() error {
 func WebCheckerStop() {
 	if webCheckerModule != nil {
 		//signal shutdown
-		webCheckerModule.shutdownSignal <- true
+		webCheckerModule.shutdownSignal <- struct{}{}
 
 		//wait until all workers are done
 		webCheckerModule.r.Wait()
@@ -172,7 +172,7 @@ func (module *WebCheckerModule) checkWebs(elapsedTime time.Duration) {
 						if notify {
 							if module.r.Acquire() {
 								go func(web *WebItem) {
-									_ = logger.Log(web.Severity, web.Channel, "The web '%s' is offline.", web.Url)
+									_ = logger.Log(web.Severity, web.Channel, "Site '%s' is down.", web.Url)
 
 									module.r.Release()
 								}(web)

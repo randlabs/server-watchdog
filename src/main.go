@@ -44,6 +44,13 @@ func main() {
 		goto Done
 	}
 
+	err = logger.EmailLoggerStart()
+	if err != nil {
+		color.Println("")
+		console.Error("Unable to create Email logger [%v]", err)
+		goto Done
+	}
+
 	err = modules.ProcessWatcherStart()
 	if err != nil {
 		color.Println("")
@@ -74,8 +81,11 @@ func main() {
 
 	color.LightGreen.Println("OK")
 
+	console.Info("Running server at port %v", settings.Config.Server.Port)
+
 	logger.FileLoggerRun(wg)
 	logger.SlackLoggerRun(wg)
+	logger.EmailLoggerRun(wg)
 	modules.ProcessWatcherRun(wg)
 	modules.WebCheckerRun(wg)
 	modules.FreeDiskSpaceCheckerRun(wg)
@@ -94,6 +104,7 @@ Done:
 	modules.FreeDiskSpaceCheckerStop()
 	modules.WebCheckerStop()
 	modules.ProcessWatcherStop()
+	logger.EmailLoggerStop()
 	logger.SlackLoggerStop()
 	logger.FileLoggerStop()
 

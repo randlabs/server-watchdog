@@ -1,0 +1,16 @@
+{
+  "name": "server-watchdog-test",
+  "version": "1.0.0",
+  "description": "Test suite for server watchdog",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "RandLabs IO",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "colors": "^1.4.0",
+    "fkill": "^6.2.0",
+    "node-fetch": "^2.6.0"
+  }
+}

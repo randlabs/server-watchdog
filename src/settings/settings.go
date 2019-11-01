@@ -65,6 +65,14 @@ func Load() error {
 	}
 
 	//validate settings
+	if len(Config.Name) == 0 {
+		Config.Name = "SERVER-WATCHDOG"
+	} else if len(Config.Name) > 256 {
+		return errors.New("Name is too long. Max 256 chars.")
+	}
+
+	//----
+
 	if Config.Server.Port < 1 || Config.Server.Port > 65535 {
 		return errors.New(fmt.Sprintf("Invalid server port."))
 	}
@@ -96,6 +104,8 @@ func Load() error {
 
 		if len(chName) == 0 {
 			return errors.New(fmt.Sprintf("A channel without name was specified."))
+		} else if len(chName) == 32 {
+			return errors.New(fmt.Sprintf("Channel name too long. Max 32 chars."))
 		}
 
 		ch := Config.Channels[chName]
@@ -113,6 +123,11 @@ func Load() error {
 
 		if ch.EMail != nil && ch.EMail.Enabled {
 			hasOutput = true
+
+			if len(ch.EMail.Subject) > 256 {
+				return errors.New(fmt.Sprintf("Email subject for channel \"%v\" is too long. Max 256 chars.", chName))
+			}
+
 			if !valid.IsEmail(ch.EMail.Sender) {
 				return errors.New(fmt.Sprintf("Missing or invalid sender email address for channel \"%v\".", chName))
 			}
@@ -151,7 +166,7 @@ func Load() error {
 
 	//----
 
-	for idx, _ := range Config.Webs {
+	for idx := range Config.Webs {
 		web := &Config.Webs[idx]
 
 		if !valid.IsURL(web.Url) {
@@ -184,7 +199,7 @@ func Load() error {
 
 	//----
 
-	for idx, _ := range Config.FreeDiskSpace {
+	for idx := range Config.FreeDiskSpace {
 		fds := &Config.FreeDiskSpace[idx]
 
 		if len(fds.Device) == 0 {

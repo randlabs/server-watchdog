@@ -14,8 +14,8 @@ import (
 
 func Initialize(router *server.Router) {
 	router.POST("/notify", onPostNotify)
-	router.POST("/watch_process", onPostWatchProcess)
-	router.POST("/unwatch_process", onPostUnwatchProcess)
+	router.POST("/process/watch", onPostWatchProcess)
+	router.POST("/process/unwatch", onPostUnwatchProcess)
 	return
 }
 
@@ -86,7 +86,7 @@ func onPostWatchProcess(ctx *server.RequestCtx) {
 	}
 
 	//add to watch list
-	err = modules.ProcessWatcherAdd(r.Pid, r.Name, r.Severity, r.Name)
+	err = modules.ProcessWatcherAdd(r.Pid, r.Name, r.Severity, r.Channel)
 	if err != nil {
 		server.SendBadRequest(ctx, err.Error())
 		return

@@ -1,0 +1,51 @@
+{
+	"server": {
+		"port": 3002,
+		"apiKey": "set-some-key"
+	},
+	"log": {
+		"folder": "../logs",
+		"maxAge": "7d"
+	},
+	"channels": {
+		"default": {
+			"file": {
+				"enable": true
+			},
+			"slack": {
+				"enable": false,
+				"channel": "slackToken1/slackToken2/slackToken3"
+			},
+			"email": {
+				"enable": false,
+				"sender": "foo@bar.com",
+				"subject": "",
+				"receivers": [ "please@notify.me" ],
+				"smtpServer": {
+					"username": "the-user",
+					"password": "the-password",
+					"host": "smtp.gmail.com",
+					"port": 465,
+					"useSSL": true
+				}
+			}
+		}
+	},
+
+	"webs": [
+		{
+			"url": "https://www.google.com",
+			"checkPeriod": "1min",
+			"channel": "default"
+		}
+	],
+
+	"freeDiskSpace": [
+		{
+			"device": "C:\\",
+			"checkPeriod": "10secs",
+			"minimumSpace": "200G",
+			"channel": "default"
+		}
+	]
+}

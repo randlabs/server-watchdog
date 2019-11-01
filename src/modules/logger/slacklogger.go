@@ -16,13 +16,8 @@ import (
 //------------------------------------------------------------------------------
 
 type SlackLoggerModule struct {
-	shutdownSignal chan bool
-	baseFolder string
-	maxAge time.Duration
-	newLine string
-	activeFilesMtx sync.RWMutex
-	activeFiles map[string]ActiveLogFile
-	wg sync.WaitGroup
+	shutdownSignal chan struct{}
+	wg             sync.WaitGroup
 }
 
 type SlackRequestBody struct {
@@ -38,7 +33,7 @@ var slackModule *SlackLoggerModule
 func SlackLoggerStart() error {
 	//initialize module
 	slackModule = &SlackLoggerModule{}
-	slackModule.shutdownSignal = make(chan bool, 1)
+	slackModule.shutdownSignal = make(chan struct{})
 
 	return nil
 }
@@ -46,7 +41,7 @@ func SlackLoggerStart() error {
 func SlackLoggerStop() {
 	if slackModule != nil {
 		//signal shutdown
-		slackModule.shutdownSignal <- true
+		slackModule.shutdownSignal <- struct{}{}
 
 		//wait until all workers are done
 		slackModule.wg.Wait()
@@ -74,7 +69,7 @@ func SlackLoggerRun(wg sync.WaitGroup) {
 }
 
 func SlackLoggerInfo(channel string, format string, a ...interface{}) {
-	//no op
+	slackModule.sendSlackNotification(channel, "[INFO]", format, a...)
 	return
 }
 
@@ -113,7 +108,9 @@ func (module *SlackLoggerModule) sendSlackNotification(channel string, title str
 		var resBuf *bytes.Buffer
 		var err error
 
-		msgBody, _ = json.Marshal(SlackRequestBody{Text: title + " " + msg})
+		msgBody, _ = json.Marshal(SlackRequestBody{
+			Text: title + " " + settings.Config.Name + ": " + msg,
+		})
 		req, err = http.NewRequest(http.MethodPost, "https://hooks.slack.com/services/" + slackChannel,
 						bytes.NewBuffer(msgBody))
 		if err == nil {

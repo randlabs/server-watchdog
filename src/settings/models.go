@@ -7,6 +7,7 @@ import (
 //------------------------------------------------------------------------------
 
 type SettingsJSON struct {
+	Name string `json:"name,omitempty"`
 	Server struct {
 		Port   uint   `json:"port"`
 		ApiKey string `json:"apiKey"`
@@ -38,6 +39,7 @@ type SettingsJSON_Channel_Slack struct {
 
 type SettingsJSON_Channel_EMail struct {
 	Enabled     bool  `json:"enable"`
+	Subject     string `json:"subject"`
 	Sender      string `json:"sender"`
 	Receivers   []string `json:"receivers"`
 	Server      SettingsJSON_EMail_SmtpServer `json:"smtpServer"`

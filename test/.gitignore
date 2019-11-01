@@ -1,0 +1,7 @@
+*.~*
+package-lock.json
+*genesis*.json
+settings.js
+node_modules/
+algorand-api-backend.sublime-project
+algorand-api-backend.sublime-workspace

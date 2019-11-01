@@ -14,10 +14,10 @@ import (
 //------------------------------------------------------------------------------
 
 type FreeDiskSpaceCheckerModule struct {
-	shutdownSignal chan bool
-	devicesList []DeviceItem
-	r rp.RundownProtection
-	checkDone chan struct{}
+	shutdownSignal chan struct{}
+	devicesList    []DeviceItem
+	r              rp.RundownProtection
+	checkDone      chan struct{}
 }
 
 type DeviceItem struct {
@@ -40,7 +40,7 @@ var fdsCheckerModule *FreeDiskSpaceCheckerModule
 func FreeDiskSpaceCheckerStart() error {
 	//initialize module
 	fdsCheckerModule = &FreeDiskSpaceCheckerModule{}
-	fdsCheckerModule.shutdownSignal = make(chan bool, 1)
+	fdsCheckerModule.shutdownSignal = make(chan struct{})
 
 	//build devices list from settings
 	fdsCheckerModule.devicesList = make([]DeviceItem, len(settings.Config.FreeDiskSpace))
@@ -58,7 +58,7 @@ func FreeDiskSpaceCheckerStart() error {
 func FreeDiskSpaceCheckerStop() {
 	if fdsCheckerModule != nil {
 		//signal shutdown
-		fdsCheckerModule.shutdownSignal <- true
+		fdsCheckerModule.shutdownSignal <- struct{}{}
 
 		//wait until all workers are done
 		fdsCheckerModule.r.Wait()
@@ -152,7 +152,7 @@ func (module *FreeDiskSpaceCheckerModule) checkDevices(elapsedTime time.Duration
 
 								if module.r.Acquire() {
 									go func(dev *DeviceItem) {
-										_ = logger.Log(dev.Severity, dev.Channel, "The disk space on '%s' is low.",
+										_ = logger.Log(dev.Severity, dev.Channel, "Disk space on '%s' is low.",
 														dev.Device)
 
 										module.r.Release()

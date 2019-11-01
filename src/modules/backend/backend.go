@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/randlabs/server-watchdog/console"
-	"github.com/randlabs/server-watchdog/handlers"
+	"github.com/randlabs/server-watchdog/modules/backend/handlers"
 	"github.com/randlabs/server-watchdog/server"
 )
 
@@ -31,8 +31,6 @@ func BackendStart() error {
 		return err
 	}
 	handlers.Initialize(module.svr.Router)
-
-	console.Info("Running server at port %v", settings.Config.Server.Port)
 
 	return nil
 }

@@ -17,13 +17,13 @@ import (
 //------------------------------------------------------------------------------
 
 type FileLoggerModule struct {
-	shutdownSignal chan bool
-	baseFolder string
-	maxAge time.Duration
-	newLine string
+	shutdownSignal chan struct{}
+	baseFolder     string
+	maxAge         time.Duration
+	newLine        string
 	activeFilesMtx sync.RWMutex
-	activeFiles map[string]ActiveLogFile
-	wg sync.WaitGroup
+	activeFiles    map[string]ActiveLogFile
+	wg             sync.WaitGroup
 }
 
 type ActiveLogFile struct {
@@ -54,7 +54,7 @@ func init() {
 func FileLoggerStart() error {
 	//initialize module
 	fileModule = &FileLoggerModule{}
-	fileModule.shutdownSignal = make(chan bool, 1)
+	fileModule.shutdownSignal = make(chan struct{})
 
 	fileModule.activeFiles = make(map[string]ActiveLogFile)
 
@@ -83,7 +83,7 @@ func FileLoggerStart() error {
 func FileLoggerStop() {
 	if fileModule != nil {
 		//signal shutdown
-		fileModule.shutdownSignal <- true
+		fileModule.shutdownSignal <- struct{}{}
 
 		//wait until all workers are done
 		fileModule.wg.Wait()

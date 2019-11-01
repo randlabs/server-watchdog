@@ -4,6 +4,7 @@
     <working_directory value="$PROJECT_DIR$/bin" />
     <go_parameters value="-i" />
     <parameters value="--settings ../config/settings.json" />
+    <sudo value="true" />
     <kind value="DIRECTORY" />
     <filePath value="$PROJECT_DIR$/" />
     <directory value="$PROJECT_DIR$/src" />
