@@ -64,14 +64,18 @@ func (r *RundownProtection) Release() {
 }
 
 func (r *RundownProtection) Wait() {
+	var val uint32
+
 	for {
-		val := atomic.LoadUint32(&r.counter)
+		val = atomic.LoadUint32(&r.counter)
 		if atomic.CompareAndSwapUint32(&r.counter, val, val | rundownActive) {
 			break
 		}
 	}
 
 	//wait
-	<- r.done
+	if val != 0 {
+		<-r.done
+	}
 	return
 }

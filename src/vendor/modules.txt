@@ -14,7 +14,7 @@ github.com/klauspost/compress/zlib
 github.com/klauspost/cpuid
 # github.com/randlabs/directories v1.0.0
 github.com/randlabs/directories
-# github.com/randlabs/rundown-protection v0.0.0-20191025161028-f50df8d30c4c
+# github.com/randlabs/rundown-protection v1.0.1
 github.com/randlabs/rundown-protection
 # github.com/ricochet2200/go-disk-usage v0.0.0-20150921141558-f0d1b743428f
 github.com/ricochet2200/go-disk-usage/du
