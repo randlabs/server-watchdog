@@ -6,7 +6,8 @@
 	},
 	"log": {
 		"folder": "../logs",
-		"maxAge": "7d"
+		"maxAge": "7d",
+		"useLocalTime": false
 	},
 	"channels": {
 		"default": {
@@ -34,6 +35,18 @@
 	},
 
 	"webs": [
+		{
+			"url": "https://algoexplorer.io/",
+			"checkPeriod": "1min",
+			"channel": "default",
+			"content": [
+				{
+					"search": "<a\\s+class\\=\"link\"\\s+href\\='/block/(\\d+)'>(\\d+)</a>",
+					"checkChanges": [ 1 ]
+				}
+			]
+		},
+
 		{
 			"url": "https://www.google.com",
 			"checkPeriod": "1min",

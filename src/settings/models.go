@@ -13,10 +13,11 @@ type SettingsJSON struct {
 		Port   uint   `json:"port"`
 		ApiKey string `json:"apiKey"`
 	} `json:"server"`
-	FileLog struct {
-		Folder  string `json:"folder"`
-		MaxAge  string `json:"maxAge,omitempty"`
-		MaxAgeX time.Duration
+	Log struct {
+		Folder       string `json:"folder"`
+		MaxAge       string `json:"maxAge,omitempty"`
+		MaxAgeX      time.Duration
+		UseLocalTime bool `json:useLocalTime,omitempty"`
 	} `json:"log"`
 	Channels map[string]SettingsJSON_Channel   `json:"channels"`
 	Webs []SettingsJSON_Webs                   `json:"webs,omitempty"`

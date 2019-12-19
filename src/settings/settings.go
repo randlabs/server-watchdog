@@ -83,16 +83,16 @@ func Load() error {
 
 	//----
 
-	if len(Config.FileLog.MaxAge) > 0 {
-		Config.FileLog.MaxAgeX, ok = parseDuration(Config.FileLog.MaxAge)
+	if len(Config.Log.MaxAge) > 0 {
+		Config.Log.MaxAgeX, ok = parseDuration(Config.Log.MaxAge)
 		if !ok {
 			return errors.New("Invalid log files max age value.")
 		}
-		if Config.FileLog.MaxAgeX < 10 * time.Minute {
+		if Config.Log.MaxAgeX < 10 * time.Minute {
 			return errors.New("Log files max age value cannot be lower than 10 minutes.")
 		}
 	} else {
-		Config.FileLog.MaxAgeX = 7 * 24 * time.Hour
+		Config.Log.MaxAgeX = 7 * 24 * time.Hour
 	}
 
 	//----
