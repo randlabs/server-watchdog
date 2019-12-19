@@ -4,14 +4,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/randlabs/server-watchdog/utils/process"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
 	valid "github.com/asaskevich/govalidator"
-	"github.com/randlabs/server-watchdog/utils/string_parser"
+	"github.com/randlabs/server-watchdog/utils/process"
+	"github.com/randlabs/server-watchdog/utils/stringparser"
 )
 
 //------------------------------------------------------------------------------
@@ -186,6 +187,24 @@ func Load() error {
 			web.CheckPeriodX = -1
 		}
 
+		for contentIdx := range web.Content {
+			wc := &web.Content[contentIdx]
+
+			if len(wc.Search) == 0 {
+				return errors.New(fmt.Sprintf("Missing content search regex for web \"%v\".", web.Url))
+			}
+			wc.SearchRegex, err = regexp.Compile(wc.Search)
+			if err != nil {
+				return errors.New(fmt.Sprintf("Invalid content search regex for web \"%v\".", web.Url))
+			}
+
+			nSubExpr := uint(wc.SearchRegex.NumSubexp())
+			for idx := range wc.CheckChanges {
+				if wc.CheckChanges[idx] < 1 || wc.CheckChanges[idx] > nSubExpr {
+					return errors.New(fmt.Sprintf("Invalid content search regex for web \"%v\".", web.Url))
+				}
+			}
+		}
 		_, ok = Config.Channels[web.Channel]
 		if !ok {
 			return errors.New(fmt.Sprintf("Channel not found for web \"%v\".", web.Url))
@@ -269,7 +288,7 @@ func ValidateChannel(channel string) bool {
 func parseDuration(t string) (time.Duration, bool) {
 	var d time.Duration
 
-	width := string_parser.SkipSpaces(t)
+	width := stringparser.SkipSpaces(t)
 	if width < 0 {
 		return 0, false
 	}
@@ -279,20 +298,20 @@ func parseDuration(t string) (time.Duration, bool) {
 
 	for width < len(t) {
 		//get value
-		value, w := string_parser.GetUint64(t[width:])
+		value, w := stringparser.GetUint64(t[width:])
 		if w <= 0 {
 			return 0, false
 		}
 		width += w
 
-		w = string_parser.SkipSpaces(t[width:])
+		w = stringparser.SkipSpaces(t[width:])
 		if w < 0 {
 			return 0, false
 		}
 		width += w
 
 		//get units
-		units, w := string_parser.GetText(t[width:])
+		units, w := stringparser.GetText(t[width:])
 		if w <= 0 {
 			return 0, false
 		}
@@ -346,7 +365,7 @@ func parseDuration(t string) (time.Duration, bool) {
 			return 0, false //rollover
 		}
 
-		w = string_parser.SkipSpaces(t[width:])
+		w = stringparser.SkipSpaces(t[width:])
 		if w < 0 {
 			return 0, false
 		}
@@ -360,7 +379,7 @@ func parseMinimumRequiredSpace(t string) (uint64, bool) {
 	var siz uint64
 	var w int
 
-	width := string_parser.SkipSpaces(t)
+	width := stringparser.SkipSpaces(t)
 	if width < 0 {
 		return 0, false
 	}
@@ -369,26 +388,26 @@ func parseMinimumRequiredSpace(t string) (uint64, bool) {
 	}
 
 	//get value
-	value, w := string_parser.GetFloat64(t[width:])
+	value, w := stringparser.GetFloat64(t[width:])
 	if w <= 0 {
 		return 0, false
 	}
 	width += w
 
-	w = string_parser.SkipSpaces(t[width:])
+	w = stringparser.SkipSpaces(t[width:])
 	if w < 0 {
 		return 0, false
 	}
 	width += w
 
 	//get units
-	units, w := string_parser.GetText(t[width:])
+	units, w := stringparser.GetText(t[width:])
 	if w <= 0 {
 		return 0, false
 	}
 	width += w
 
-	w = string_parser.SkipSpaces(t[width:])
+	w = stringparser.SkipSpaces(t[width:])
 	if w < 0 {
 		return 0, false
 	}

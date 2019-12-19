@@ -6,9 +6,11 @@ import (
 
 	"github.com/gookit/color"
 	"github.com/randlabs/server-watchdog/console"
-	"github.com/randlabs/server-watchdog/modules"
 	"github.com/randlabs/server-watchdog/modules/backend"
+	"github.com/randlabs/server-watchdog/modules/freediskspacechecker"
 	"github.com/randlabs/server-watchdog/modules/logger"
+	"github.com/randlabs/server-watchdog/modules/processwatcher"
+	"github.com/randlabs/server-watchdog/modules/webchecker"
 	"github.com/randlabs/server-watchdog/settings"
 	"github.com/randlabs/server-watchdog/utils/process"
 )
@@ -30,49 +32,35 @@ func main() {
 		console.Fatal("%v", err.Error())
 	}
 
-	err = logger.FileLoggerStart()
+	err = logger.Start() // Must be initialize first
 	if err != nil {
 		color.Println("")
-		console.Error("Unable to create file logger [%v]", err)
+		console.Error("Unable to create loggers [%v]", err)
 		goto Done
 	}
 
-	err = logger.SlackLoggerStart()
-	if err != nil {
-		color.Println("")
-		console.Error("Unable to create Slack logger [%v]", err)
-		goto Done
-	}
-
-	err = logger.EmailLoggerStart()
-	if err != nil {
-		color.Println("")
-		console.Error("Unable to create Email logger [%v]", err)
-		goto Done
-	}
-
-	err = modules.ProcessWatcherStart()
+	err = processwatcher.Start()
 	if err != nil {
 		color.Println("")
 		console.Error("Unable to create process monitor [%v]", err)
 		goto Done
 	}
 
-	err = modules.FreeDiskSpaceCheckerStart()
+	err = freediskspacechecker.Start()
 	if err != nil {
 		color.Println("")
 		console.Error("Unable to create process monitor [%v]", err)
 		goto Done
 	}
 
-	err = modules.WebCheckerStart()
+	err = webchecker.Start()
 	if err != nil {
 		color.Println("")
 		console.Error("Unable to create process monitor [%v]", err)
 		goto Done
 	}
 
-	err = backend.BackendStart()
+	err = backend.Start()
 	if err != nil {
 		color.Println("")
 		console.Error("Unable to create server [%v]", err)
@@ -83,13 +71,11 @@ func main() {
 
 	console.Info("Running server at port %v", settings.Config.Server.Port)
 
-	logger.FileLoggerRun(wg)
-	logger.SlackLoggerRun(wg)
-	logger.EmailLoggerRun(wg)
-	modules.ProcessWatcherRun(wg)
-	modules.WebCheckerRun(wg)
-	modules.FreeDiskSpaceCheckerRun(wg)
-	backend.BackendRun(wg)
+	logger.Run(wg)
+	processwatcher.Run(wg)
+	webchecker.Run(wg)
+	freediskspacechecker.Run(wg)
+	backend.Run(wg)
 
 	<-process.GetShutdownSignal()
 
@@ -100,13 +86,11 @@ Done:
 		color.Print("Shutting down... ")
 	}
 
-	backend.BackendStop()
-	modules.FreeDiskSpaceCheckerStop()
-	modules.WebCheckerStop()
-	modules.ProcessWatcherStop()
-	logger.EmailLoggerStop()
-	logger.SlackLoggerStop()
-	logger.FileLoggerStop()
+	backend.Stop()
+	freediskspacechecker.Stop()
+	webchecker.Stop()
+	processwatcher.Stop()
+	logger.Stop()
 
 	wg.Wait()
 

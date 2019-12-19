@@ -1,6 +1,7 @@
 package settings
 
 import (
+	"regexp"
 	"time"
 )
 
@@ -55,10 +56,17 @@ type SettingsJSON_EMail_SmtpServer struct {
 
 type SettingsJSON_Webs struct {
 	Url          string `json:"url"`
+	Content      []SettingsJSON_Webs_Content `json:"content,omitempty"`
 	CheckPeriod  string `json:"checkPeriod,omitempty"`
 	CheckPeriodX time.Duration
 	Channel      string `json:"channel"`
 	Severity     string `json:"severity,omitempty"`
+}
+
+type SettingsJSON_Webs_Content struct {
+	Search       string `json:"search"`
+	CheckChanges []uint `json:"checkChanges,omitempty"`
+	SearchRegex  *regexp.Regexp
 }
 
 type SettingsJSON_FreeDiskSpace struct {

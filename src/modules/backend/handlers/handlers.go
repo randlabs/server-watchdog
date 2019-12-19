@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"encoding/json"
+	"github.com/randlabs/server-watchdog/modules/processwatcher"
 	"strings"
 
-	"github.com/randlabs/server-watchdog/modules"
 	"github.com/randlabs/server-watchdog/modules/logger"
 	"github.com/randlabs/server-watchdog/server"
 	"github.com/randlabs/server-watchdog/settings"
@@ -13,6 +13,7 @@ import (
 //------------------------------------------------------------------------------
 
 func Initialize(router *server.Router) {
+	router.GET("/ping", onGetPing)
 	router.POST("/notify", onPostNotify)
 	router.POST("/process/watch", onPostWatchProcess)
 	router.POST("/process/unwatch", onPostUnwatchProcess)
@@ -20,6 +21,12 @@ func Initialize(router *server.Router) {
 }
 
 //------------------------------------------------------------------------------
+
+func onGetPing(ctx *server.RequestCtx) {
+	ctx.WriteString("pong!")
+	server.SendSuccess(ctx)
+	return
+}
 
 func onPostNotify(ctx *server.RequestCtx) {
 	var r NotifyRequest
@@ -86,7 +93,7 @@ func onPostWatchProcess(ctx *server.RequestCtx) {
 	}
 
 	//add to watch list
-	err = modules.ProcessWatcherAdd(r.Pid, r.Name, r.Severity, r.Channel)
+	err = processwatcher.AddProcess(r.Pid, r.Name, r.Severity, r.Channel)
 	if err != nil {
 		server.SendBadRequest(ctx, err.Error())
 		return
@@ -131,7 +138,7 @@ func onPostUnwatchProcess(ctx *server.RequestCtx) {
 	}
 
 	//remove from watch list
-	modules.ProcessWatcherRemove(r.Pid, r.Channel)
+	processwatcher.RemoveProcess(r.Pid, r.Channel)
 
 	//done
 	server.SendSuccess(ctx)

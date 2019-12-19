@@ -1,30 +1,30 @@
 package backend
 
 import (
-	"github.com/randlabs/server-watchdog/settings"
 	"sync"
 
 	"github.com/randlabs/server-watchdog/console"
 	"github.com/randlabs/server-watchdog/modules/backend/handlers"
 	"github.com/randlabs/server-watchdog/server"
+	"github.com/randlabs/server-watchdog/settings"
 )
 
 //------------------------------------------------------------------------------
 
-type BackendModule struct {
+type Module struct {
 	svr *server.Server
 }
 
 //------------------------------------------------------------------------------
 
-var module *BackendModule
+var module *Module
 
 //------------------------------------------------------------------------------
 
-func BackendStart() error {
+func Start() error {
 	var err error
 
-	module = &BackendModule{}
+	module = &Module{}
 	module.svr, err = server.Create(settings.Config.Server.Port, false)
 	if err != nil {
 		module = nil
@@ -35,7 +35,7 @@ func BackendStart() error {
 	return nil
 }
 
-func BackendStop() {
+func Stop() {
 	if module != nil {
 		module.svr.Stop()
 
@@ -45,7 +45,7 @@ func BackendStop() {
 	return
 }
 
-func BackendRun(wg sync.WaitGroup) {
+func Run(wg sync.WaitGroup) {
 	if module != nil {
 		wg.Add(1)
 

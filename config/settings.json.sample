@@ -1,6 +1,7 @@
 {
+	"name": "Watchdog Demo",
 	"server": {
-		"port": 3002,
+		"port": 3004,
 		"apiKey": "set-some-key"
 	},
 	"log": {
