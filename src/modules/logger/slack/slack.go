@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -68,24 +67,24 @@ func Run(wg sync.WaitGroup) {
 	return
 }
 
-func Info(channel string, format string, a ...interface{}) {
-	slackModule.sendSlackNotification(channel, "[INFO]", format, a...)
+func Info(channel string, timestamp string, msg string) {
+	slackModule.sendSlackNotification(channel, "[INFO]", timestamp, msg)
 	return
 }
 
-func Warn(channel string, format string, a ...interface{}) {
-	slackModule.sendSlackNotification(channel, "[WARN]", format, a...)
+func Warn(channel string, timestamp string, msg string) {
+	slackModule.sendSlackNotification(channel, "[WARN]", timestamp, msg)
 	return
 }
 
-func Error(channel string, format string, a ...interface{}) {
-	slackModule.sendSlackNotification(channel, "[ERROR]", format, a...)
+func Error(channel string, timestamp string, msg string) {
+	slackModule.sendSlackNotification(channel, "[ERROR]", timestamp, msg)
 	return
 }
 
 //------------------------------------------------------------------------------
 
-func (module *Module) sendSlackNotification(channel string, title string, format string, a ...interface{}) {
+func (module *Module) sendSlackNotification(channel string, title string, timestamp string, msg string) {
 	module.wg.Add(1)
 
 	//retrieve channel info and check if enabled
@@ -100,13 +99,15 @@ func (module *Module) sendSlackNotification(channel string, title string, format
 	}
 
 	//do notification
-	go func(slackChannel string, msg string) {
+	go func(slackChannel string, timestamp string, msg string) {
 		var msgBody []byte
 		var req *http.Request
 		var res *http.Response
 		var client *http.Client
 		var resBuf *bytes.Buffer
 		var err error
+
+		_ = timestamp // avoid declared and not used
 
 		msgBody, _ = json.Marshal(SlackRequestBody{
 			Text: title + " " + settings.Config.Name + ": " + msg,
@@ -134,5 +135,5 @@ func (module *Module) sendSlackNotification(channel string, title string, format
 		}
 
 		module.wg.Done()
-	}(ch.Slack.Channel, fmt.Sprintf(format, a...))
+	}(ch.Slack.Channel, timestamp, msg)
 }

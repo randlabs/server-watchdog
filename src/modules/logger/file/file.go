@@ -1,7 +1,6 @@
 package file
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -30,7 +29,7 @@ type ActiveLogFile struct {
 	mtx       sync.Mutex
 	appName   string
 	fd        *os.File
-	dayOfFile int
+	dayOfFile string
 }
 
 //------------------------------------------------------------------------------
@@ -59,7 +58,7 @@ func Start() error {
 	fileModule.activeFiles = make(map[string]ActiveLogFile)
 
 	//set up the base folder for log files
-	fileModule.baseFolder = settings.Config.FileLog.Folder
+	fileModule.baseFolder = settings.Config.Log.Folder
 	if len(fileModule.baseFolder) == 0 {
 		fileModule.baseFolder = "logs"
 	}
@@ -72,7 +71,7 @@ func Start() error {
 	}
 
 	//get the maximum age for log files from settings
-	fileModule.maxAge = settings.Config.FileLog.MaxAgeX
+	fileModule.maxAge = settings.Config.Log.MaxAgeX
 
 	//delete the old logs
 	fileModule.deleteOldFiles()
@@ -137,18 +136,18 @@ func Run(wg sync.WaitGroup) {
 	return
 }
 
-func Info(channel string, format string, a ...interface{}) {
-	fileModule.writeFileLog(channel, "[INFO]", format, a...)
+func Info(channel string, timestamp string, msg string) {
+	fileModule.writeFileLog(channel, "[INFO]", timestamp, msg)
 	return
 }
 
-func Warn(channel string, format string, a ...interface{}) {
-	fileModule.writeFileLog(channel, "[WARN]", format, a...)
+func Warn(channel string, timestamp string, msg string) {
+	fileModule.writeFileLog(channel, "[WARN]", timestamp, msg)
 	return
 }
 
-func Error(channel string, format string, a ...interface{}) {
-	fileModule.writeFileLog(channel, "[ERROR]", format, a...)
+func Error(channel string, timestamp string, msg string) {
+	fileModule.writeFileLog(channel, "[ERROR]", timestamp, msg)
 	return
 }
 
@@ -194,7 +193,7 @@ func (module *Module) getActiveLogFile(channel string) *ActiveLogFile {
 
 	newF = ActiveLogFile{}
 	newF.appName = channel
-	newF.dayOfFile = -1
+	newF.dayOfFile = ""
 
 	module.activeFilesMtx.Lock()
 	f, ok = module.activeFiles[channel]
@@ -209,7 +208,7 @@ func (module *Module) getActiveLogFile(channel string) *ActiveLogFile {
 	return &newF
 }
 
-func (module *Module) writeFileLog(channel string, title string, format string, a ...interface{}) {
+func (module *Module) writeFileLog(channel string, title string, timestamp string, msg string) {
 	module.wg.Add(1)
 
 	ch, ok := settings.Config.Channels[channel]
@@ -228,7 +227,7 @@ func (module *Module) writeFileLog(channel string, title string, format string, 
 		return
 	}
 
-	go func(f *ActiveLogFile, msg string) {
+	go func(f *ActiveLogFile, timestamp string, msg string) {
 		var err error
 
 		err = nil
@@ -236,8 +235,7 @@ func (module *Module) writeFileLog(channel string, title string, format string, 
 		f.mtx.Lock()
 		defer f.mtx.Unlock()
 
-		now := time.Now().UTC()
-		if f.fd == nil || now.Day() != f.dayOfFile {
+		if f.fd == nil || timestamp[0:10] != f.dayOfFile {
 			if f.fd != nil {
 				_ = f.fd.Sync()
 				_ = f.fd.Close()
@@ -248,17 +246,17 @@ func (module *Module) writeFileLog(channel string, title string, format string, 
 
 			_ = os.MkdirAll(folder, 0755)
 
-			filename := folder + f.appName + "." + now.Format("2006-01-02") + ".log"
+			filename := folder + f.appName + "." + timestamp[0:10] + ".log"
 
 			f.fd, err = os.OpenFile(filename, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
 			if err == nil {
-				f.dayOfFile = now.Day()
+				f.dayOfFile = timestamp[0:10]
 			}
 
 		}
 
 		if err == nil {
-			_, err = f.fd.WriteString("[" + now.Format("2006-01-02 15:04:05") + "] " + title + " - " + msg + newLine)
+			_, err = f.fd.WriteString("[" + timestamp + "] " + title + " - " + msg + newLine)
 		}
 
 		if err != nil {
@@ -266,7 +264,7 @@ func (module *Module) writeFileLog(channel string, title string, format string, 
 		}
 
 		module.wg.Done()
-	}(f, fmt.Sprintf(format, a...))
+	}(f, timestamp, msg)
 
 	return
 }

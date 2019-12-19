@@ -2,7 +2,9 @@ package logger
 
 import (
 	"errors"
+	"fmt"
 	"sync"
+	"time"
 
 	"github.com/randlabs/server-watchdog/console"
 	"github.com/randlabs/server-watchdog/modules/logger/email"
@@ -60,25 +62,42 @@ func Log(severity string, channel string, format string, a ...interface{}) error
 }
 
 func LogError(channel string, format string, a ...interface{}) {
-	console.ErrorWithTitle(channel, format, a...)
-	file.Error(channel, format, a...)
-	slack.Error(channel, format, a...)
-	email.Error(channel, format, a...)
+	timestamp := getTimestamp()
+	msg := fmt.Sprintf(format, a...)
+
+	console.LogError(channel, timestamp, msg)
+	file.Error(channel, timestamp, msg)
+	slack.Error(channel, timestamp, msg)
+	email.Error(channel, timestamp, msg)
 	return
 }
 
 func LogWarn(channel string, format string, a ...interface{}) {
-	console.WarnWithTitle(channel, format, a...)
-	file.Warn(channel, format, a...)
-	slack.Warn(channel, format, a...)
-	email.Warn(channel, format, a...)
+	timestamp := getTimestamp()
+	msg := fmt.Sprintf(format, a...)
+
+	console.LogWarn(channel, timestamp, msg)
+	file.Warn(channel, timestamp, msg)
+	slack.Warn(channel, timestamp, msg)
+	email.Warn(channel, timestamp, msg)
 	return
 }
 
 func LogInfo(channel string, format string, a ...interface{}) {
-	console.InfoWithTitle(channel, format, a...)
-	file.Info(channel, format, a...)
-	slack.Info(channel, format, a...)
-	email.Info(channel, format, a...)
+	timestamp := getTimestamp()
+	msg := fmt.Sprintf(format, a...)
+
+	console.LogInfo(channel, timestamp, msg)
+	file.Info(channel, timestamp, msg)
+	slack.Info(channel, timestamp, msg)
+	email.Info(channel, timestamp, msg)
 	return
+}
+
+func getTimestamp() string {
+	now := time.Now()
+	if !settings.Config.Log.UseLocalTime {
+		now = now.UTC()
+	}
+	return now.Format("2006-01-02 15:04:05")
 }

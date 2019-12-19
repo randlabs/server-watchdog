@@ -2,6 +2,7 @@ package console
 
 import (
 	"fmt"
+	"github.com/randlabs/server-watchdog/settings"
 	"os"
 	"sync"
 	"time"
@@ -16,17 +17,17 @@ var m sync.Mutex
 //------------------------------------------------------------------------------
 
 func Info(format string, a ...interface{}) {
-	InfoWithTitle("", format, a...)
+	printCommon("", color.Info, "INFO", getTimestamp(), fmt.Sprintf(format, a...))
 	return
 }
 
 func Warn(format string, a ...interface{}) {
-	WarnWithTitle("", format, a...)
+	printCommon("", color.Warn, "WARN", getTimestamp(), fmt.Sprintf(format, a...))
 	return
 }
 
 func Error(format string, a ...interface{}) {
-	ErrorWithTitle("", format, a...)
+	printCommon("", color.Error, "ERROR", getTimestamp(), fmt.Sprintf(format, a...))
 	return
 }
 
@@ -35,35 +36,40 @@ func Fatal(format string, a ...interface{}) {
 	os.Exit(1)
 }
 
-func InfoWithTitle(title string, format string, a ...interface{}) {
-	printCommon(title, color.Info, "INFO", format, a...)
+func LogInfo(title string, timestamp string, msg string) {
+	printCommon(title, color.Info, "INFO", timestamp, msg)
 	return
 }
 
-func WarnWithTitle(title string, format string, a ...interface{}) {
-	printCommon(title, color.Warn, "WARN", format, a...)
+func LogWarn(title string, timestamp string, msg string) {
+	printCommon(title, color.Warn, "WARN", timestamp, msg)
 	return
 }
 
-func ErrorWithTitle(title string, format string, a ...interface{}) {
-	printCommon(title, color.Error, "ERROR", format, a...)
+func LogError(title string, timestamp string, msg string) {
+	printCommon(title, color.Error, "ERROR", timestamp, msg)
 	return
 }
 
 //------------------------------------------------------------------------------
 
-func printCommon(title string, theme *color.Theme, label string, format string, a ...interface{}) {
-	msg := fmt.Sprintf(format, a...)
-	now := time.Now().UTC()
-
+func printCommon(title string, theme *color.Theme, label string, timestamp string, msg string) {
 	m.Lock()
 	defer m.Unlock()
 
-	color.Print(now.Format("2006-01-02 15:04:05") + " ")
+	color.Print(timestamp + " ")
 	theme.Print("[" + label + "]", )
 	if len(title) > 0 {
 		color.Print(" " + title)
 	}
 	color.Print(" - " + msg + "\n", )
 	return
+}
+
+func getTimestamp() string {
+	now := time.Now()
+	if !settings.Config.Log.UseLocalTime {
+		now = now.UTC()
+	}
+	return now.Format("2006-01-02 15:04:05")
 }

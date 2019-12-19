@@ -66,24 +66,24 @@ func Run(wg sync.WaitGroup) {
 	return
 }
 
-func Info(channel string, format string, a ...interface{}) {
-	emailModule.sendEmailNotification(channel, "[INFO]", format, a...)
+func Info(channel string, timestamp string, msg string) {
+	emailModule.sendEmailNotification(channel, "[INFO]", timestamp, msg)
 	return
 }
 
-func Warn(channel string, format string, a ...interface{}) {
-	emailModule.sendEmailNotification(channel, "[WARN]", format, a...)
+func Warn(channel string, timestamp string, msg string) {
+	emailModule.sendEmailNotification(channel, "[WARN]", timestamp, msg)
 	return
 }
 
-func Error(channel string, format string, a ...interface{}) {
-	emailModule.sendEmailNotification(channel, "[ERROR]", format, a...)
+func Error(channel string, timestamp string, msg string) {
+	emailModule.sendEmailNotification(channel, "[ERROR]", timestamp, msg)
 	return
 }
 
 //------------------------------------------------------------------------------
 
-func (module *Module) sendEmailNotification(channel string, title string, format string, a ...interface{}) {
+func (module *Module) sendEmailNotification(channel string, title string, timestamp string, msg string) {
 	module.wg.Add(1)
 
 	//retrieve channel info and check if enabled
@@ -98,7 +98,7 @@ func (module *Module) sendEmailNotification(channel string, title string, format
 	}
 
 	//do notification
-	go func(email *settings.SettingsJSON_Channel_EMail, channel string, title string, msg string) {
+	go func(email *settings.SettingsJSON_Channel_EMail, channel string, title string, timestamp string, msg string) {
 		var c *smtp.Client
 		var subject string
 		var err error
@@ -180,7 +180,7 @@ func (module *Module) sendEmailNotification(channel string, title string, format
 		}
 
 		module.wg.Done()
-	}(ch.EMail, channel, title, fmt.Sprintf(format, a...))
+	}(ch.EMail, channel, title, timestamp, msg)
 }
 
 func encodeRFC2047(s string) string{
