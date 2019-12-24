@@ -52,6 +52,7 @@ func Start() error {
 	//initialize module
 	webCheckerModule = &Module{}
 	webCheckerModule.shutdownSignal = make(chan struct{})
+	webCheckerModule.r.Initialize()
 
 	//build webs list from settings
 	webCheckerModule.websList = make([]WebItem, len(settings.Config.Webs))
@@ -99,7 +100,7 @@ func Start() error {
 func Stop() {
 	if webCheckerModule != nil {
 		//signal shutdown
-		webCheckerModule.shutdownSignal <- struct{}{}
+		close(webCheckerModule.shutdownSignal)
 
 		//wait until all workers are done
 		webCheckerModule.r.Wait()
@@ -116,59 +117,65 @@ func Run(wg sync.WaitGroup) {
 		//start background loop
 		wg.Add(1)
 
-		go func() {
-			if len(webCheckerModule.websList) > 0 {
-				var timeToWait time.Duration
+		if webCheckerModule.r.Acquire() {
+			go func() {
+				if len(webCheckerModule.websList) > 0 {
+					var timeToWait time.Duration
 
-				loop := true
-				for loop {
-					var start time.Time
-					var elapsed time.Duration
+					loop := true
+					for loop {
+						var start time.Time
+						var elapsed time.Duration
 
-					//find next web to check
-					timeToWait = -1
-					for i := len(webCheckerModule.websList); i > 0; i-- {
-						if atomic.LoadInt32(&webCheckerModule.websList[i - 1].CheckInProgress) == 0 {
-							if timeToWait < 0 || timeToWait > webCheckerModule.websList[i - 1].NextCheckPeriod {
-								timeToWait = webCheckerModule.websList[i - 1].NextCheckPeriod
+						//find next web to check
+						timeToWait = -1
+						for i := len(webCheckerModule.websList); i > 0; i-- {
+							if atomic.LoadInt32(&webCheckerModule.websList[i - 1].CheckInProgress) == 0 {
+								if timeToWait < 0 || timeToWait > webCheckerModule.websList[i - 1].NextCheckPeriod {
+									timeToWait = webCheckerModule.websList[i - 1].NextCheckPeriod
+								}
+							}
+						}
+
+						start = time.Now()
+						if timeToWait >= 0 {
+							select {
+							case <-webCheckerModule.shutdownSignal:
+								loop = false
+
+							case <-time.After(timeToWait):
+								//check webs when the time to wait elapses
+								webCheckerModule.checkWebs(timeToWait)
+
+							case <-webCheckerModule.checkDone:
+								//if a web check has finished, check again
+								elapsed = time.Since(start)
+								webCheckerModule.checkWebs(elapsed)
+							}
+						} else {
+							select {
+							case <-webCheckerModule.shutdownSignal:
+								loop = false
+
+							case <-webCheckerModule.checkDone:
+								//if a web check has finished, check for others
+								elapsed = time.Since(start)
+								webCheckerModule.checkWebs(elapsed)
 							}
 						}
 					}
-
-					start = time.Now()
-					if timeToWait >= 0 {
-						select {
-						case <-webCheckerModule.shutdownSignal:
-							loop = false
-
-						case <-time.After(timeToWait):
-							//check webs when the time to wait elapses
-							webCheckerModule.checkWebs(timeToWait)
-
-						case <-webCheckerModule.checkDone:
-							//if a web check has finished, check again
-							elapsed = time.Since(start)
-							webCheckerModule.checkWebs(elapsed)
-						}
-					} else {
-						select {
-						case <-webCheckerModule.shutdownSignal:
-							loop = false
-
-						case <-webCheckerModule.checkDone:
-							//if a web check has finished, check for others
-							elapsed = time.Since(start)
-							webCheckerModule.checkWebs(elapsed)
-						}
-					}
+				} else {
+					//no webs to check, just wait for the shutdown signal
+					<-webCheckerModule.shutdownSignal
 				}
-			} else {
-				//no webs to check, just wait for the shutdown signal
-				<-webCheckerModule.shutdownSignal
-			}
 
+				webCheckerModule.r.Release()
+
+				wg.Done()
+			}()
+		} else {
 			wg.Done()
-		}()
+		}
 	}
 
 	return
@@ -273,7 +280,11 @@ func (module *Module) checkWebs(elapsedTime time.Duration) {
 
 						atomic.StoreInt32(&web.CheckInProgress, 0)
 
-						module.checkDone <- struct{}{}
+						select {
+						case module.checkDone <- struct{}{}:
+						case <-module.shutdownSignal:
+						}
+
 						module.r.Release()
 					}(&module.websList[idx - 1])
 				} else {

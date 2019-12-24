@@ -2,12 +2,12 @@ package console
 
 import (
 	"fmt"
-	"github.com/randlabs/server-watchdog/settings"
-	"os"
 	"sync"
 	"time"
 
 	"github.com/gookit/color"
+	"github.com/kardianos/service"
+	"github.com/randlabs/server-watchdog/settings"
 )
 
 //------------------------------------------------------------------------------
@@ -16,29 +16,52 @@ var m sync.Mutex
 
 //------------------------------------------------------------------------------
 
+func Print(format string, a ...interface{}) {
+	if service.Interactive() {
+		color.Print(fmt.Sprintf(format, a...))
+	}
+}
+
+func Println(format string, a ...interface{}) {
+	if service.Interactive() {
+		color.Println(fmt.Sprintf(format, a...))
+	}
+}
+
 func Info(format string, a ...interface{}) {
-	printCommon("", color.Info, "INFO", getTimestamp(), fmt.Sprintf(format, a...))
-	return
+	if service.Interactive() {
+		printCommon("", color.Info, "INFO", getTimestamp(), fmt.Sprintf(format, a...))
+	}
 }
 
 func Warn(format string, a ...interface{}) {
-	printCommon("", color.Warn, "WARN", getTimestamp(), fmt.Sprintf(format, a...))
-	return
+	if service.Interactive() {
+		printCommon("", color.Warn, "WARN", getTimestamp(), fmt.Sprintf(format, a...))
+	}
 }
 
 func Error(format string, a ...interface{}) {
-	printCommon("", color.Error, "ERROR", getTimestamp(), fmt.Sprintf(format, a...))
-	return
+	if service.Interactive() {
+		printCommon("", color.Error, "ERROR", getTimestamp(), fmt.Sprintf(format, a...))
+	}
 }
 
-func Fatal(format string, a ...interface{}) {
-	Error(format, a)
-	os.Exit(1)
+func PrintlnSuccess() {
+	if service.Interactive() {
+		color.LightGreen.Println("OK")
+	}
+}
+
+func PrintlntError(format string, a ...interface{}) {
+	if service.Interactive() {
+		color.Error.Println(fmt.Sprintf(format, a...))
+	}
 }
 
 func LogInfo(title string, timestamp string, msg string) {
-	printCommon(title, color.Info, "INFO", timestamp, msg)
-	return
+	if service.Interactive() {
+		printCommon(title, color.Info, "INFO", timestamp, msg)
+	}
 }
 
 func LogWarn(title string, timestamp string, msg string) {
@@ -47,8 +70,9 @@ func LogWarn(title string, timestamp string, msg string) {
 }
 
 func LogError(title string, timestamp string, msg string) {
-	printCommon(title, color.Error, "ERROR", timestamp, msg)
-	return
+	if service.Interactive() {
+		printCommon(title, color.Error, "ERROR", timestamp, msg)
+	}
 }
 
 //------------------------------------------------------------------------------

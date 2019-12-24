@@ -6,6 +6,8 @@ github.com/buaazp/fasthttprouter
 github.com/golang/protobuf/proto
 # github.com/gookit/color v1.2.0
 github.com/gookit/color
+# github.com/kardianos/service v1.0.0
+github.com/kardianos/service
 # github.com/klauspost/compress v1.8.2
 github.com/klauspost/compress/flate
 github.com/klauspost/compress/gzip
@@ -14,7 +16,7 @@ github.com/klauspost/compress/zlib
 github.com/klauspost/cpuid
 # github.com/randlabs/directories v1.0.0
 github.com/randlabs/directories
-# github.com/randlabs/rundown-protection v1.0.1
+# github.com/randlabs/rundown-protection v1.0.2
 github.com/randlabs/rundown-protection
 # github.com/ricochet2200/go-disk-usage v0.0.0-20150921141558-f0d1b743428f
 github.com/ricochet2200/go-disk-usage/du
@@ -38,6 +40,10 @@ github.com/vmihailenco/tagparser/internal/parser
 golang.org/x/net/context
 # golang.org/x/sys v0.0.0-20191115151921-52ab43148777
 golang.org/x/sys/windows
+golang.org/x/sys/windows/registry
+golang.org/x/sys/windows/svc
+golang.org/x/sys/windows/svc/eventlog
+golang.org/x/sys/windows/svc/mgr
 # google.golang.org/appengine v1.6.5
 google.golang.org/appengine
 google.golang.org/appengine/datastore

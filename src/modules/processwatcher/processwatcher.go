@@ -18,7 +18,6 @@ type Module struct {
 	shutdownSignal chan struct{}
 	processListMtx sync.Mutex
 	processList    []*ProcessItem
-	shuttingDown   int32
 	r              rp.RundownProtection
 }
 
@@ -51,6 +50,7 @@ func Start() error {
 	//initialize module
 	processWatcherModule = &Module{}
 	processWatcherModule.shutdownSignal = make(chan struct{})
+	processWatcherModule.r.Initialize()
 
 	//load stored state
 	stateItems, err := loadState()
@@ -86,8 +86,7 @@ func Start() error {
 func Stop() {
 	if processWatcherModule != nil {
 		//signal shutdown
-		atomic.StoreInt32(&processWatcherModule.shuttingDown, 1)
-		processWatcherModule.shutdownSignal <- struct{}{}
+		close(processWatcherModule.shutdownSignal)
 
 		//wait until all workers are done
 		processWatcherModule.r.Wait()
@@ -95,6 +94,7 @@ func Stop() {
 		// Because we use buffered channels, this won't deadlock
 		processWatcherModule.processListMtx.Lock()
 		for i := len(processWatcherModule.processList); i > 0; i-- {
+			atomic.StoreInt32(&processWatcherModule.processList[i - 1].Removing, 1)
 			processWatcherModule.processList[i - 1].Remove <- struct{}{}
 		}
 		processWatcherModule.processListMtx.Unlock()
@@ -109,11 +109,17 @@ func Run(wg sync.WaitGroup) {
 		//start background loop
 		wg.Add(1)
 
-		go func() {
-			<-processWatcherModule.shutdownSignal
+		if processWatcherModule.r.Acquire() {
+			go func() {
+				<-processWatcherModule.shutdownSignal
 
+				processWatcherModule.r.Release()
+
+				wg.Done()
+			}()
+		} else {
 			wg.Done()
-		}()
+		}
 	}
 
 	return
@@ -188,14 +194,14 @@ func addProcessInternal(pid int, name string, severity string, channel string) e
 				defer module.processListMtx.Unlock()
 
 				if atomic.LoadInt32(&p.Removing) == 0 {
-					listLen := len(processWatcherModule.processList)
+					listLen := len(module.processList)
 
 					for i := listLen; i > 0; i-- {
-						if processWatcherModule.processList[i - 1].Pid == p.Pid && processWatcherModule.processList[i - 1].Channel == p.Channel {
+						if module.processList[i - 1].Pid == p.Pid && module.processList[i - 1].Channel == p.Channel {
 							//from https://github.com/golang/go/wiki/SliceTricks to avoid leaks
-							processWatcherModule.processList[i - 1] = processWatcherModule.processList[listLen - 1]
-							processWatcherModule.processList[listLen - 1] = nil
-							processWatcherModule.processList = processWatcherModule.processList[:(listLen - 1)]
+							module.processList[i - 1] = module.processList[listLen - 1]
+							module.processList[listLen - 1] = nil
+							module.processList = module.processList[:(listLen - 1)]
 							break
 						}
 					}

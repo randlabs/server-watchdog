@@ -30,21 +30,10 @@ func Load() error {
 	var ok bool
 	var err error
 
-	settingsFilename = "./settings.json"
-	for idx, arg := range os.Args {
-		if arg == "--settings" {
-			if idx >= len(os.Args) {
-				return errors.New("Missing argument for --settings parameter.")
-			}
-			settingsFilename = os.Args[idx + 1]
-			break
-		}
+	settingsFilename, err = GetSettingsFilename()
+	if err != nil {
+		return err
 	}
-
-	if !filepath.IsAbs(settingsFilename) {
-		settingsFilename = filepath.Join(process.AppPath, settingsFilename)
-	}
-	settingsFilename = filepath.Clean(settingsFilename)
 
 	file, err = os.Open(settingsFilename)
 	if err != nil {
@@ -258,6 +247,22 @@ func Load() error {
 	}
 
 	return nil
+}
+
+func GetSettingsFilename() (string, error) {
+	filename, err := process.GetCmdLineParam("settings")
+	if err != nil {
+		return "", err
+	}
+	if len(filename) == 0 {
+		filename = "./settings.json"
+	}
+
+	if !filepath.IsAbs(filename) {
+		filename = filepath.Join(process.AppPath, filename)
+	}
+	filename = filepath.Clean(filename)
+	return filename, nil
 }
 
 func ValidateSeverity(severity string) string {

@@ -31,8 +31,14 @@ type RundownProtection struct {
 
 func Create() *RundownProtection {
 	r := &RundownProtection{}
-	r.done = make(chan struct{})
+	r.Initialize()
 	return r
+}
+
+func (r *RundownProtection) Initialize() {
+	atomic.StoreUint32(&r.counter, 0)
+	r.done = make(chan struct{}, 1)
+	return
 }
 
 func (r *RundownProtection) Acquire() bool {

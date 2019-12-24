@@ -44,6 +44,7 @@ func Start() error {
 	//initialize module
 	fdsCheckerModule = &Module{}
 	fdsCheckerModule.shutdownSignal = make(chan struct{})
+	fdsCheckerModule.r.Initialize()
 
 	//build devices list from settings
 	fdsCheckerModule.devicesList = make([]DeviceItem, len(settings.Config.FreeDiskSpace))
@@ -81,7 +82,7 @@ func Start() error {
 func Stop() {
 	if fdsCheckerModule != nil {
 		//signal shutdown
-		fdsCheckerModule.shutdownSignal <- struct{}{}
+		close(fdsCheckerModule.shutdownSignal)
 
 		//wait until all workers are done
 		fdsCheckerModule.r.Wait()
@@ -98,58 +99,64 @@ func Run(wg sync.WaitGroup) {
 		//start background loop
 		wg.Add(1)
 
-		go func() {
-			if len(fdsCheckerModule.devicesList) > 0 {
-				var timeToWait time.Duration
+		if fdsCheckerModule.r.Acquire() {
+			go func() {
+				if len(fdsCheckerModule.devicesList) > 0 {
+					var timeToWait time.Duration
 
-				loop := true
-				for loop {
-					var start time.Time
-					var elapsed time.Duration
+					loop := true
+					for loop {
+						var start time.Time
+						var elapsed time.Duration
 
-					//find next device to check
-					timeToWait = -1
-					for i := len(fdsCheckerModule.devicesList); i > 0; i-- {
-						if atomic.LoadInt32(&fdsCheckerModule.devicesList[i - 1].CheckInProgress) == 0 {
-							if timeToWait < 0 || timeToWait > fdsCheckerModule.devicesList[i - 1].NextCheckPeriod {
-								timeToWait = fdsCheckerModule.devicesList[i - 1].NextCheckPeriod
+						//find next device to check
+						timeToWait = -1
+						for i := len(fdsCheckerModule.devicesList); i > 0; i-- {
+							if atomic.LoadInt32(&fdsCheckerModule.devicesList[i-1].CheckInProgress) == 0 {
+								if timeToWait < 0 || timeToWait > fdsCheckerModule.devicesList[i-1].NextCheckPeriod {
+									timeToWait = fdsCheckerModule.devicesList[i-1].NextCheckPeriod
+								}
+							}
+						}
+
+						start = time.Now()
+						if timeToWait >= 0 {
+							select {
+							case <-fdsCheckerModule.shutdownSignal:
+								loop = false
+
+							case <-time.After(timeToWait):
+								//check devices when the time to wait elapses
+								fdsCheckerModule.checkDevices(timeToWait)
+
+							case <-fdsCheckerModule.checkDone:
+								//if a device check has finished, check again
+								elapsed = time.Since(start)
+								fdsCheckerModule.checkDevices(elapsed)
+							}
+						} else {
+							select {
+							case <-fdsCheckerModule.shutdownSignal:
+								loop = false
+
+							case <-fdsCheckerModule.checkDone:
+								//if a device check has finished, check for others
+								elapsed = time.Since(start)
+								fdsCheckerModule.checkDevices(elapsed)
 							}
 						}
 					}
-
-					start = time.Now()
-					if timeToWait >= 0 {
-						select {
-						case <-fdsCheckerModule.shutdownSignal:
-							loop = false
-
-						case <-time.After(timeToWait):
-							//check devices when the time to wait elapses
-							fdsCheckerModule.checkDevices(timeToWait)
-
-						case <-fdsCheckerModule.checkDone:
-							//if a device check has finished, check again
-							elapsed = time.Since(start)
-							fdsCheckerModule.checkDevices(elapsed)
-						}
-					} else {
-						select {
-						case <-fdsCheckerModule.shutdownSignal:
-							loop = false
-
-						case <-fdsCheckerModule.checkDone:
-							//if a device check has finished, check for others
-							elapsed = time.Since(start)
-							fdsCheckerModule.checkDevices(elapsed)
-						}
-					}
+				} else {
+					<-fdsCheckerModule.shutdownSignal
 				}
-			} else {
-				<-fdsCheckerModule.shutdownSignal
-			}
 
+				fdsCheckerModule.r.Release()
+
+				wg.Done()
+			}()
+		} else {
 			wg.Done()
-		}()
+		}
 	}
 
 	return
@@ -196,7 +203,11 @@ func (module *Module) checkDevices(elapsedTime time.Duration) {
 
 						atomic.StoreInt32(&dev.CheckInProgress, 0)
 
-						module.checkDone <- struct{}{}
+						select {
+							case module.checkDone <- struct{}{}:
+							case <-module.shutdownSignal:
+						}
+
 						module.r.Release()
 					}(&module.devicesList[idx - 1])
 				} else {
