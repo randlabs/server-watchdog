@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"time"
 
@@ -215,8 +216,10 @@ func Load() error {
 		}
 
 		fds.Device = filepath.Clean(fds.Device)
-		if !strings.HasSuffix(fds.Device, string(filepath.Separator)) {
-			fds.Device += string(filepath.Separator)
+		if runtime.GOOS == "windows" {
+			if !strings.HasSuffix(fds.Device, string(filepath.Separator)) {
+				fds.Device += string(filepath.Separator)
+			}
 		}
 
 		fds.MinimumSpaceX, ok = parseMinimumRequiredSpace(fds.MinimumSpace)
