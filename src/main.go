@@ -10,6 +10,7 @@ import (
 	"github.com/randlabs/server-watchdog/modules/webchecker"
 	"github.com/randlabs/server-watchdog/settings"
 	"github.com/randlabs/server-watchdog/utils/process"
+	"runtime"
 	"sync"
 )
 
@@ -124,6 +125,9 @@ func main() {
 		Name:        "ServerWatcher",
 		DisplayName: "Randlabs.IO Server Watcher service",
 		Description: "A service that acts as a centralized notification system and monitors processes, webs and disks.",
+	}
+	if runtime.GOOS != "windows" {
+		svcConfig.Name = "serverwatcher"
 	}
 
 	if serviceCmdLineParam == "install" {
