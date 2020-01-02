@@ -1,0 +1,58 @@
+# github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a
+github.com/asaskevich/govalidator
+# github.com/buaazp/fasthttprouter v0.1.1
+github.com/buaazp/fasthttprouter
+# github.com/golang/protobuf v1.3.2
+github.com/golang/protobuf/proto
+# github.com/gookit/color v1.2.0
+github.com/gookit/color
+# github.com/kardianos/service v1.0.0
+github.com/kardianos/service
+# github.com/klauspost/compress v1.8.2
+github.com/klauspost/compress/flate
+github.com/klauspost/compress/gzip
+github.com/klauspost/compress/zlib
+# github.com/klauspost/cpuid v1.2.1
+github.com/klauspost/cpuid
+# github.com/randlabs/directories v1.0.0
+github.com/randlabs/directories
+# github.com/randlabs/rundown-protection v1.0.2
+github.com/randlabs/rundown-protection
+# github.com/ricochet2200/go-disk-usage v0.0.0-20150921141558-f0d1b743428f
+github.com/ricochet2200/go-disk-usage/du
+# github.com/valyala/bytebufferpool v1.0.0
+github.com/valyala/bytebufferpool
+# github.com/valyala/fasthttp v1.5.0
+github.com/valyala/fasthttp
+github.com/valyala/fasthttp/fasthttputil
+github.com/valyala/fasthttp/reuseport
+github.com/valyala/fasthttp/stackless
+# github.com/valyala/tcplisten v0.0.0-20161114210144-ceec8f93295a
+github.com/valyala/tcplisten
+# github.com/vmihailenco/msgpack/v4 v4.2.1
+github.com/vmihailenco/msgpack/v4
+github.com/vmihailenco/msgpack/v4/codes
+# github.com/vmihailenco/tagparser v0.1.0
+github.com/vmihailenco/tagparser
+github.com/vmihailenco/tagparser/internal
+github.com/vmihailenco/tagparser/internal/parser
+# golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297
+golang.org/x/net/context
+# golang.org/x/sys v0.0.0-20191115151921-52ab43148777
+golang.org/x/sys/windows
+golang.org/x/sys/windows/registry
+golang.org/x/sys/windows/svc
+golang.org/x/sys/windows/svc/eventlog
+golang.org/x/sys/windows/svc/mgr
+# google.golang.org/appengine v1.6.5
+google.golang.org/appengine
+google.golang.org/appengine/datastore
+google.golang.org/appengine/datastore/internal/cloudkey
+google.golang.org/appengine/datastore/internal/cloudpb
+google.golang.org/appengine/internal
+google.golang.org/appengine/internal/app_identity
+google.golang.org/appengine/internal/base
+google.golang.org/appengine/internal/datastore
+google.golang.org/appengine/internal/log
+google.golang.org/appengine/internal/modules
+google.golang.org/appengine/internal/remote_api

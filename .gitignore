@@ -1,0 +1,9 @@
+*.~*
+bin/*
+!bin/.gitkeep
+config/settings.json
+config/*.lic
+logs/*
+!logs/.gitkeep
+tests/package-lock.json
+tests/node_modules/

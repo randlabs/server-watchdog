@@ -1,0 +1,65 @@
+{
+	"name": "Watchdog Demo",
+	"server": {
+		"port": 3004,
+		"apiKey": "set-some-key"
+	},
+	"log": {
+		"folder": "../logs",
+		"maxAge": "7d",
+		"useLocalTime": false
+	},
+	"channels": {
+		"default": {
+			"file": {
+				"enable": true
+			},
+			"slack": {
+				"enable": false,
+				"channel": "slackToken1/slackToken2/slackToken3"
+			},
+			"email": {
+				"enable": false,
+				"sender": "foo@bar.com",
+				"subject": "",
+				"receivers": [ "please@notify.me" ],
+				"smtpServer": {
+					"username": "the-user",
+					"password": "the-password",
+					"host": "smtp.gmail.com",
+					"port": 465,
+					"useSSL": true
+				}
+			}
+		}
+	},
+
+	"webs": [
+		{
+			"url": "https://algoexplorer.io/",
+			"checkPeriod": "1min",
+			"channel": "default",
+			"content": [
+				{
+					"search": "<a\\s+class\\=\"link\"\\s+href\\='/block/(\\d+)'>(\\d+)</a>",
+					"checkChanges": [ 1 ]
+				}
+			]
+		},
+
+		{
+			"url": "https://www.google.com",
+			"checkPeriod": "1min",
+			"channel": "default"
+		}
+	],
+
+	"freeDiskSpace": [
+		{
+			"device": "C:\\",
+			"checkPeriod": "10secs",
+			"minimumSpace": "200G",
+			"channel": "default"
+		}
+	]
+}
