@@ -36,23 +36,21 @@ Runs the server monitoring tool as a standalone application.
 
 # Configuration file
 
-<details>
-<summary>Click here to expand a sample configuration file</summary>
-```
+<details><summary>Click here to expand a sample configuration file</summary>
+<p>
+
+```json
 {
 	"name": "Watchdog Demo",
-
 	"server": {
 		"port": 3004,
 		"apiKey": "set-some-key"
 	},
-
 	"log": {
 		"folder": "./logs",
 		"maxAge": "7d",
 		"useLocalTime": true
 	},
-
 	"channels": {
 		"default": {
 			"file": {
@@ -76,7 +74,7 @@ Runs the server monitoring tool as a standalone application.
 				}
 			}
 		},
-        "channel1": {
+		"channel1": {
 			"file": {
 				"enable": true
 			},
@@ -86,7 +84,6 @@ Runs the server monitoring tool as a standalone application.
 			}
 		}
 	},
-
 	"webs": [
 		{
 			"url": "https://some-web.com/",
@@ -105,7 +102,6 @@ Runs the server monitoring tool as a standalone application.
 			"channel": "default"
 		}
 	],
-
 	"freeDiskSpace": [
 		{
 			"device": "/mnt/volume1",
@@ -114,8 +110,10 @@ Runs the server monitoring tool as a standalone application.
 			"channel": "default"
 		}
 	]
-  } 
-``` 
+}
+```
+
+</p>
 </details>
 
 #### `name`
