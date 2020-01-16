@@ -87,6 +87,9 @@ Runs the server monitoring tool as a standalone application.
 	"webs": [
 		{
 			"url": "https://some-web.com/",
+			"headers": {
+				"Accept": "application/json"
+			},
 			"checkPeriod": "1min",
 			"channel": "default",
 			"content": [
@@ -122,7 +125,7 @@ A custom short name for this server instance. Mainly used to differentiate sever
 
 #### `server`
 
-Specifies server parameters.
+Defines server parameters.
 
 ##### `server.port`
 
@@ -134,7 +137,7 @@ A string that specifies the access token. Clients that connects to this server M
 
 #### `log`
 
-Specifies file logging parameters.
+Defines file logging parameters.
 
 ##### `log.folder`
 
@@ -158,7 +161,7 @@ Replace `{channel-name}` with a valid object name. The `default` channel is mand
 
 ##### `channels.{channel-name}.file` (optional)
     
-Specifies the file configuration for this channel.
+Designates the file configuration for this channel.
 
 ##### `channels.{channel-name}.file.enabled`
 
@@ -174,7 +177,7 @@ If true, messages are sent to the specified Slack channel.
 
 ##### `channels.{channel-name}.slack.channel`
 
-Specifies the target Slack WebHook channel for messaage delivery. The channel format is `T00000000/B00000000/XXXXXXXXXXX`. See
+Designates the target Slack WebHook channel for messaage delivery. The channel format is `T00000000/B00000000/XXXXXXXXXXX`. See
 [this page](https://api.slack.com/messaging/webhooks#posting_with_webhooks) for details.
 
 ##### `channels.{channel-name}.email` (optional)
@@ -203,19 +206,19 @@ Specifies the SMTP server connection settings.
 
 ##### `channels.{channel-name}.email.smtpServer.username`
 
-Specifies the SMTP server access user name.
+Defines the SMTP server access user name.
 
 ##### `channels.{channel-name}.email.smtpServer.password`
 
-Specifies the SMTP server access password.
+Defines the SMTP server access password.
 
 ##### `channels.{channel-name}.email.smtpServer.host`
 
-Specifies the SMTP server host name.
+Defines the SMTP server host name.
 
 ##### `channels.{channel-name}.email.smtpServer.port`
 
-Specifies the SMTP server port.
+Defines the SMTP server port.
 
 ##### `channels.{channel-name}.email.smtpServer.useSSL`
 
@@ -229,13 +232,17 @@ Defines an optional array of one or more web sites to be monitored. If a site is
 
 Specifies the web url to monitor.
 
+##### `webs.headers` (optional)
+
+Defines optionals headers to send in the request.
+
 ##### `webs.checkPeriod`
 
-Specifies how often the check should be done. Time units are the same than `log.maxAge`.
+Establishes how often the check should be done. Time units are the same than `log.maxAge`.
 
 ##### `webs.channel`
 
-Specifies the channel to use when a notification must be sent because the check failed.
+Establishes the channel to use when a notification must be sent because the check failed.
 
 ##### `webs.channel.content` (optional)
 
@@ -261,7 +268,7 @@ Specifies the directory to monitor. E.g.: `C:\`, `/`, `/mnt/volume1/`.
 
 ##### `freeDiskSpace.checkPeriod`
 
-Specifies how often the check should be done. Time units are the same than `log.maxAge`.
+Establishes how often the check should be done. Time units are the same than `log.maxAge`.
 
 ##### `freeDiskSpace.minimumSpace`
 
@@ -269,8 +276,8 @@ The minimum required space for this disk device. Units can be `b` or `bytes` for
 
 ##### `freeDiskSpace.channel`
 
-Specifies the channel to use when a notification must be sent because the check failed.
-    
+Establishes the channel to use when a notification must be sent because the check failed.
+
 # License
 
 See [LICENSE](LICENSE) file.
