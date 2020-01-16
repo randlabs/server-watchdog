@@ -27,6 +27,7 @@ type Module struct {
 type WebItem struct {
 	HashCode        uint64
 	Url             string
+	Headers         map[string]string
 	Content         []WebItem_Content
 	Channel         string
 	Severity        string
@@ -72,9 +73,17 @@ func Start() error {
 			h.Sum([]byte(c.SearchRegex.String()))
 		}
 
+		wh := map[string]string{}
+		if web.Headers != nil {
+			for key, value := range *web.Headers {
+				wh[key] = value
+			}
+		}
+
 		webCheckerModule.websList[idx] = WebItem{
 			h.Sum64(),
 			web.Url,
+			wh,
 			wc,
 			web.Channel,
 			web.Severity,
@@ -200,7 +209,13 @@ func (module *Module) checkWebs(elapsedTime time.Duration) {
 						client := http.Client{
 							Timeout: 10 * time.Second,
 						}
-						resp, err := client.Get(web.Url)
+
+						req, _ := http.NewRequest("GET", web.Url, nil)
+						for hdrKey, hdrValue := range web.Headers {
+							req.Header.Set(hdrKey, hdrValue)
+						}
+
+						resp, err := client.Do(req)
 						if err == nil {
 							if resp.StatusCode == http.StatusOK {
 								if web.Content != nil {
@@ -244,8 +259,6 @@ func (module *Module) checkWebs(elapsedTime time.Duration) {
 											newStatus = 1
 										}
 									}
-
-
 								} else {
 									newStatus = 1
 								}

@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -40,7 +43,7 @@ func Start() error {
 func Stop() {
 	if slackModule != nil {
 		//signal shutdown
-		slackModule.shutdownSignal <- struct{}{}
+		close(slackModule.shutdownSignal)
 
 		//wait until all workers are done
 		slackModule.wg.Wait()
@@ -102,9 +105,8 @@ func (module *Module) sendSlackNotification(channel string, title string, timest
 	go func(slackChannel string, timestamp string, msg string) {
 		var msgBody []byte
 		var req *http.Request
-		var res *http.Response
+		var resp *http.Response
 		var client *http.Client
-		var resBuf *bytes.Buffer
 		var err error
 
 		_ = timestamp // avoid declared and not used
@@ -112,20 +114,67 @@ func (module *Module) sendSlackNotification(channel string, title string, timest
 		msgBody, _ = json.Marshal(SlackRequestBody{
 			Text: title + " " + settings.Config.Name + ": " + msg,
 		})
+
+TryAgain:
+		client = &http.Client{
+			Timeout: 10 * time.Second,
+		}
+
 		req, err = http.NewRequest(http.MethodPost, "https://hooks.slack.com/services/" + slackChannel,
 						bytes.NewBuffer(msgBody))
 		if err == nil {
 			req.Header.Add("Content-Type", "application/json")
 
-			client = &http.Client{Timeout: 10 * time.Second}
-			res, err = client.Do(req)
+			resp, err = client.Do(req)
 			if err == nil {
-				resBuf = new(bytes.Buffer)
-				_, err = resBuf.ReadFrom(res.Body)
-				if err == nil {
-					if resBuf.String() != "ok" {
-						err = errors.New("Unsuccessful response returned from Slack")
+				if resp.StatusCode == http.StatusOK {
+					/*
+					bodyBytes, err := ioutil.ReadAll(resp.Body)
+					if err == nil {
+						bodyString := string(bodyBytes)
+						if bodyString != "ok" {
+							err = errors.New("Unsuccessful response returned from Slack")
+						}
 					}
+					*/
+				} else if resp.StatusCode == http.StatusTooManyRequests {
+					var secs int64 = 5 //default timeout
+
+					s := resp.Header.Get("Retry-After")
+					s = strings.TrimSpace(s)
+					if len(s) > 0 {
+						if s[0] >= '0' && s[0] <= '9' {
+							deltaSecs, err := strconv.Atoi(s)
+							if err == nil && deltaSecs > 0 {
+								secs = int64(deltaSecs)
+							}
+						} else {
+							timestamp, err := time.Parse(time.RFC1123, s)
+							if err != nil {
+								timestamp, err = time.Parse(time.RFC1123Z, s)
+							}
+							if err == nil {
+								timestamp = timestamp.UTC()
+
+								now := time.Now().UTC()
+								if timestamp.After(now) {
+									deltaSecs2 := int64(timestamp.Sub(now))
+									if deltaSecs2 > 0 {
+										secs = deltaSecs2
+									}
+								}
+							}
+						}
+					}
+
+					select {
+					case <-module.shutdownSignal:
+						err = errors.New("Canceled delivery due to shutdown")
+					case <-time.After(time.Duration(secs) * time.Second):
+						goto TryAgain
+					}
+				} else {
+					err = errors.New(fmt.Sprintf("Unexpected response [status: %v]", resp.StatusCode))
 				}
 			}
 		}

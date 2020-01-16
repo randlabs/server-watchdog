@@ -26,24 +26,24 @@ type SettingsJSON struct {
 
 type SettingsJSON_Channel struct {
 	File  *SettingsJSON_Channel_File  `json:"file,omitempty"`
-	Slack *SettingsJSON_Channel_Slack  `json:"slack,omitempty"`
-	EMail *SettingsJSON_Channel_EMail  `json:"email,omitempty"`
+	Slack *SettingsJSON_Channel_Slack `json:"slack,omitempty"`
+	EMail *SettingsJSON_Channel_EMail `json:"email,omitempty"`
 }
 
 type SettingsJSON_Channel_File struct {
-	Enabled bool   `json:"enable"`
+	Enabled bool `json:"enable"`
 }
 
 type SettingsJSON_Channel_Slack struct {
-	Enabled bool  `json:"enable"`
+	Enabled bool   `json:"enable"`
 	Channel string `json:"channel"`
 }
 
 type SettingsJSON_Channel_EMail struct {
-	Enabled     bool  `json:"enable"`
-	Subject     string `json:"subject"`
-	Sender      string `json:"sender"`
-	Receivers   []string `json:"receivers"`
+	Enabled     bool                          `json:"enable"`
+	Subject     string                        `json:"subject"`
+	Sender      string                        `json:"sender"`
+	Receivers   []string                      `json:"receivers"`
 	Server      SettingsJSON_EMail_SmtpServer `json:"smtpServer"`
 }
 
@@ -56,12 +56,13 @@ type SettingsJSON_EMail_SmtpServer struct {
 }
 
 type SettingsJSON_Webs struct {
-	Url          string `json:"url"`
+	Url          string                      `json:"url"`
+	Headers      *map[string]string          `json:"headers,omitempty"`
 	Content      []SettingsJSON_Webs_Content `json:"content,omitempty"`
-	CheckPeriod  string `json:"checkPeriod,omitempty"`
+	CheckPeriod  string                      `json:"checkPeriod,omitempty"`
 	CheckPeriodX time.Duration
-	Channel      string `json:"channel"`
-	Severity     string `json:"severity,omitempty"`
+	Channel      string                      `json:"channel"`
+	Severity     string                      `json:"severity,omitempty"`
 }
 
 type SettingsJSON_Webs_Content struct {
