@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/RoaringBitmap/roaring"
 	"os"
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -170,9 +172,8 @@ func Load() error {
 				return errors.New(fmt.Sprintf("Invalid web check period value for web \"%v\".", web.Url))
 			}
 			if web.CheckPeriodX < 1 * time.Minute {
-				return errors.New(fmt.Sprintf("Web check period for channel \"%v\" cannot be lower than 1 minute.", web.Url))
+				return errors.New(fmt.Sprintf("Web check period value for TCP Port \"%v\" cannot be lower than 1 minute.", web.Url))
 			}
-
 		} else {
 			web.CheckPeriodX = -1
 		}
@@ -208,6 +209,66 @@ func Load() error {
 
 	//----
 
+	for idx := range Config.TcpPorts {
+		port := &Config.TcpPorts[idx]
+
+		if len(port.Name) == 0 {
+			return errors.New(fmt.Sprintf("Missing or invalid TCP Port description name."))
+		}
+
+		if !valid.IsHost(port.Address) {
+			return errors.New(fmt.Sprintf("Missing or invalid address in TCP Port \"%v\".", port.Name))
+		}
+
+		port.PortsX, ok = parsePortsList(port.Ports)
+		if !ok {
+			return errors.New(fmt.Sprintf("Missing or invalid port value/range in TCP Port \"%v\".", port.Name))
+		}
+
+		if len(port.CheckPeriod) > 0 {
+			port.CheckPeriodX, ok = parseDuration(port.CheckPeriod)
+			if !ok {
+				return errors.New(fmt.Sprintf("Invalid port check period value for TCP Port \"%v\".", port.Name))
+			}
+			if port.CheckPeriodX < 1 * time.Minute {
+				return errors.New(fmt.Sprintf("Check period value for TCP Port \"%v\" cannot be lower than 1 minute.", port.Name))
+			}
+		} else {
+			port.CheckPeriodX = -1
+		}
+
+		_, ok = Config.Channels[port.Channel]
+		if !ok {
+			return errors.New(fmt.Sprintf("Channel not found for TCP Port \"%v\".", port.Name))
+		}
+
+		port.Severity = ValidateSeverity(port.Severity)
+		if len(port.Severity) == 0 {
+			return errors.New(fmt.Sprintf("Invalid severity for TCP Port \"%v\".", port.Name))
+		}
+	}
+
+	//----
+
+	for idx := range Config.Processes {
+		proc := &Config.Processes[idx]
+
+		if len(proc.ExecutableName) == 0 {
+			return errors.New(fmt.Sprintf("Missing or invalid process' executable name."))
+		}
+
+		_, ok = Config.Channels[proc.Channel]
+		if !ok {
+			return errors.New(fmt.Sprintf("Channel not found for process \"%v\".", proc.ExecutableName))
+		}
+
+		proc.Severity = ValidateSeverity(proc.Severity)
+		if len(proc.Severity) == 0 {
+			return errors.New(fmt.Sprintf("Invalid severity for process \"%v\".", proc.ExecutableName))
+		}
+	}
+	//----
+
 	for idx := range Config.FreeDiskSpace {
 		fds := &Config.FreeDiskSpace[idx]
 
@@ -240,12 +301,12 @@ func Load() error {
 
 		_, ok = Config.Channels[fds.Channel]
 		if !ok {
-			return errors.New(fmt.Sprintf("Channel not found for device \"%v\".", fds.Channel))
+			return errors.New(fmt.Sprintf("Channel not found for device \"%v\".", fds.Device))
 		}
 
 		fds.Severity = ValidateSeverity(fds.Severity)
 		if len(fds.Severity) == 0 {
-			return errors.New(fmt.Sprintf("Invalid severity for device \"%v\".", fds.Channel))
+			return errors.New(fmt.Sprintf("Invalid severity for device \"%v\".", fds.Device))
 		}
 	}
 
@@ -467,4 +528,62 @@ func parseMinimumRequiredSpace(t string) (uint64, bool) {
 	}
 
 	return siz, true
+}
+
+func parsePortsList(p string) (*roaring.Bitmap, bool) {
+	var s string
+	var port int
+	var portEnd int
+	var err error
+
+	rb := roaring.New()
+
+	portGroups := strings.Split(p, ",")
+	for i := range portGroups {
+		portRange := strings.Split(portGroups[i], "-")
+
+		switch len(portRange) {
+		case 1:
+			s = strings.Trim(portRange[0], " ")
+			if len(s) == 0 {
+				return nil, false
+			}
+			port, err = strconv.Atoi(s)
+			if err != nil || port < 0 || port > 65535 {
+				return nil, false
+			}
+
+			rb.Add(uint32(port))
+
+		case 2:
+			s = strings.Trim(portRange[0], " ")
+			if len(s) == 0 {
+				return nil, false
+			}
+			port, err = strconv.Atoi(s)
+			if err != nil || port < 0 || port > 65535 {
+				return nil, false
+			}
+
+			s = strings.Trim(portRange[0], " ")
+			if len(s) == 0 {
+				return nil, false
+			}
+			portEnd, err = strconv.Atoi(s)
+			if err != nil || portEnd < port || portEnd > 65535 {
+				return nil, false
+			}
+
+			rb.AddRange(uint64(port), uint64(portEnd) + 1)
+
+		default:
+			return nil, false
+		}
+	}
+
+	if rb.IsEmpty() {
+		return nil, false
+	}
+
+	return rb, true
 }

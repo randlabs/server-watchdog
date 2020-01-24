@@ -1,9 +1,22 @@
+# github.com/RoaringBitmap/roaring v0.4.21
+github.com/RoaringBitmap/roaring
+# github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d
+github.com/StackExchange/wmi
 # github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a
 github.com/asaskevich/govalidator
+# github.com/bmatcuk/doublestar v1.2.2
+github.com/bmatcuk/doublestar
 # github.com/buaazp/fasthttprouter v0.1.1
 github.com/buaazp/fasthttprouter
+# github.com/glycerine/go-unsnap-stream v0.0.0-20181221182339-f9677308dec2
+github.com/glycerine/go-unsnap-stream
+# github.com/go-ole/go-ole v1.2.4
+github.com/go-ole/go-ole
+github.com/go-ole/go-ole/oleutil
 # github.com/golang/protobuf v1.3.2
 github.com/golang/protobuf/proto
+# github.com/golang/snappy v0.0.1
+github.com/golang/snappy
 # github.com/gookit/color v1.2.0
 github.com/gookit/color
 # github.com/kardianos/service v1.0.0
@@ -14,12 +27,24 @@ github.com/klauspost/compress/gzip
 github.com/klauspost/compress/zlib
 # github.com/klauspost/cpuid v1.2.1
 github.com/klauspost/cpuid
+# github.com/mschoch/smat v0.0.0-20160514031455-90eadee771ae
+github.com/mschoch/smat
+# github.com/philhofer/fwd v1.0.0
+github.com/philhofer/fwd
 # github.com/randlabs/directories v1.0.0
 github.com/randlabs/directories
 # github.com/randlabs/rundown-protection v1.0.2
 github.com/randlabs/rundown-protection
 # github.com/ricochet2200/go-disk-usage v0.0.0-20150921141558-f0d1b743428f
 github.com/ricochet2200/go-disk-usage/du
+# github.com/shirou/gopsutil v2.19.12+incompatible
+github.com/shirou/gopsutil/cpu
+github.com/shirou/gopsutil/internal/common
+github.com/shirou/gopsutil/mem
+github.com/shirou/gopsutil/net
+github.com/shirou/gopsutil/process
+# github.com/tinylib/msgp v1.1.0
+github.com/tinylib/msgp/msgp
 # github.com/valyala/bytebufferpool v1.0.0
 github.com/valyala/bytebufferpool
 # github.com/valyala/fasthttp v1.5.0
@@ -36,9 +61,12 @@ github.com/vmihailenco/msgpack/v4/codes
 github.com/vmihailenco/tagparser
 github.com/vmihailenco/tagparser/internal
 github.com/vmihailenco/tagparser/internal/parser
+# github.com/willf/bitset v1.1.10
+github.com/willf/bitset
 # golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297
 golang.org/x/net/context
 # golang.org/x/sys v0.0.0-20191115151921-52ab43148777
+golang.org/x/sys/unix
 golang.org/x/sys/windows
 golang.org/x/sys/windows/registry
 golang.org/x/sys/windows/svc

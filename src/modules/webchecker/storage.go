@@ -22,20 +22,22 @@ const (
 
 //------------------------------------------------------------------------------
 
-func loadState(items []WebItem) error {
+func (m *Module) loadState() error {
 	b, err := state.LoadStateBlob(webCheckerStateFileName)
 	if err == nil && b != nil {
 		var loadedItems []WebCheckerStateItem
 
 		err = msgpack.Unmarshal(b, &loadedItems)
 		if err == nil {
-			for idx, v := range items {
-				for _, v2 := range loadedItems {
-					if v.HashCode == v2.HashCode {
-						if v2.LastCheckStatus {
-							atomic.StoreInt32(&items[idx].LastCheckStatus, 1)
+			for idx := range m.websList {
+				web := &m.websList[idx]
+
+				for _, v := range loadedItems {
+					if web.HashCode == v.HashCode {
+						if v.LastCheckStatus {
+							atomic.StoreInt32(&web.LastCheckStatus, 1)
 						} else {
-							atomic.StoreInt32(&items[idx].LastCheckStatus, 0)
+							atomic.StoreInt32(&web.LastCheckStatus, 0)
 						}
 						break
 					}
@@ -43,12 +45,13 @@ func loadState(items []WebItem) error {
 			}
 		}
 	}
+
 	return err
 }
 
-func saveState(items []WebItem) error {
-	toSave := make([]WebCheckerStateItem, len(items))
-	for idx, v := range items {
+func (m *Module) saveState() error {
+	toSave := make([]WebCheckerStateItem, len(m.websList))
+	for idx, v := range m.websList {
 		status := false
 		if atomic.LoadInt32(&v.LastCheckStatus) != 0 {
 			status = true
@@ -64,5 +67,6 @@ func saveState(items []WebItem) error {
 	if err == nil {
 		err = state.SaveStateBlob(webCheckerStateFileName, b)
 	}
+
 	return err
 }

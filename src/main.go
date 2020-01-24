@@ -122,12 +122,12 @@ func main() {
 	}
 
 	svcConfig := &service.Config{
-		Name:        "ServerWatcher",
+		Name:        "ServerWatchdog",
 		DisplayName: "Randlabs.IO Server Watcher service",
 		Description: "A service that acts as a centralized notification system and monitors processes, webs and disks.",
 	}
 	if runtime.GOOS != "windows" {
-		svcConfig.Name = "serverwatcher"
+		svcConfig.Name = "serverwatchdog"
 	}
 
 	if serviceCmdLineParam == "install" {

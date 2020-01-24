@@ -45,18 +45,19 @@ type WebItem_Content struct {
 
 //------------------------------------------------------------------------------
 
-var webCheckerModule *Module
+var module *Module
+var lock sync.RWMutex
 
 //------------------------------------------------------------------------------
 
 func Start() error {
 	//initialize module
-	webCheckerModule = &Module{}
-	webCheckerModule.shutdownSignal = make(chan struct{})
-	webCheckerModule.r.Initialize()
+	module = &Module{}
+	module.shutdownSignal = make(chan struct{})
+	module.r.Initialize()
 
 	//build webs list from settings
-	webCheckerModule.websList = make([]WebItem, len(settings.Config.Webs))
+	module.websList = make([]WebItem, len(settings.Config.Webs))
 	for idx, web := range settings.Config.Webs {
 		h := fnv.New64a()
 		h.Sum([]byte(web.Url))
@@ -80,7 +81,7 @@ func Start() error {
 			}
 		}
 
-		webCheckerModule.websList[idx] = WebItem{
+		module.websList[idx] = WebItem{
 			h.Sum64(),
 			web.Url,
 			wh,
@@ -94,10 +95,10 @@ func Start() error {
 		}
 	}
 
-	webCheckerModule.checkDone = make(chan struct{})
+	module.checkDone = make(chan struct{})
 
 	//load stored state
-	err := loadState(webCheckerModule.websList)
+	err := module.loadState()
 	if err != nil {
 		console.Error("Unable to load web checker state. [%v]", err)
 		return err
@@ -107,28 +108,35 @@ func Start() error {
 }
 
 func Stop() {
-	if webCheckerModule != nil {
+	lock.Lock()
+	localModule := module
+	module = nil
+	lock.Unlock()
+
+	if localModule != nil {
 		//signal shutdown
-		close(webCheckerModule.shutdownSignal)
+		close(localModule.shutdownSignal)
 
 		//wait until all workers are done
-		webCheckerModule.r.Wait()
+		localModule.r.Wait()
 
-		close(webCheckerModule.checkDone)
-
-		webCheckerModule = nil
+		close(localModule.checkDone)
 	}
 	return
 }
 
 func Run(wg sync.WaitGroup) {
-	if webCheckerModule != nil {
+	lock.RLock()
+	localModule := module
+	lock.RUnlock()
+
+	if localModule != nil {
 		//start background loop
 		wg.Add(1)
 
-		if webCheckerModule.r.Acquire() {
+		if localModule.r.Acquire() {
 			go func() {
-				if len(webCheckerModule.websList) > 0 {
+				if len(localModule.websList) > 0 {
 					var timeToWait time.Duration
 
 					loop := true
@@ -138,10 +146,10 @@ func Run(wg sync.WaitGroup) {
 
 						//find next web to check
 						timeToWait = -1
-						for i := len(webCheckerModule.websList); i > 0; i-- {
-							if atomic.LoadInt32(&webCheckerModule.websList[i - 1].CheckInProgress) == 0 {
-								if timeToWait < 0 || timeToWait > webCheckerModule.websList[i - 1].NextCheckPeriod {
-									timeToWait = webCheckerModule.websList[i - 1].NextCheckPeriod
+						for i := len(localModule.websList); i > 0; i-- {
+							if atomic.LoadInt32(&localModule.websList[i - 1].CheckInProgress) == 0 {
+								if timeToWait < 0 || timeToWait > localModule.websList[i - 1].NextCheckPeriod {
+									timeToWait = localModule.websList[i - 1].NextCheckPeriod
 								}
 							}
 						}
@@ -149,36 +157,36 @@ func Run(wg sync.WaitGroup) {
 						start = time.Now()
 						if timeToWait >= 0 {
 							select {
-							case <-webCheckerModule.shutdownSignal:
+							case <-localModule.shutdownSignal:
 								loop = false
 
 							case <-time.After(timeToWait):
 								//check webs when the time to wait elapses
-								webCheckerModule.checkWebs(timeToWait)
+								localModule.checkWebs(timeToWait)
 
-							case <-webCheckerModule.checkDone:
+							case <-localModule.checkDone:
 								//if a web check has finished, check again
 								elapsed = time.Since(start)
-								webCheckerModule.checkWebs(elapsed)
+								localModule.checkWebs(elapsed)
 							}
 						} else {
 							select {
-							case <-webCheckerModule.shutdownSignal:
+							case <-localModule.shutdownSignal:
 								loop = false
 
-							case <-webCheckerModule.checkDone:
+							case <-localModule.checkDone:
 								//if a web check has finished, check for others
 								elapsed = time.Since(start)
-								webCheckerModule.checkWebs(elapsed)
+								localModule.checkWebs(elapsed)
 							}
 						}
 					}
 				} else {
 					//no webs to check, just wait for the shutdown signal
-					<-webCheckerModule.shutdownSignal
+					<-localModule.shutdownSignal
 				}
 
-				webCheckerModule.r.Release()
+				localModule.r.Release()
 
 				wg.Done()
 			}()
@@ -192,15 +200,17 @@ func Run(wg sync.WaitGroup) {
 
 //------------------------------------------------------------------------------
 
-func (module *Module) checkWebs(elapsedTime time.Duration) {
-	for idx := len(module.websList); idx > 0; idx-- {
-		if atomic.CompareAndSwapInt32(&module.websList[idx - 1].CheckInProgress, 0, 1) {
-			if elapsedTime >= module.websList[idx - 1].NextCheckPeriod {
+func (m *Module) checkWebs(elapsedTime time.Duration) {
+	for idx := len(m.websList); idx > 0; idx-- {
+		web := &m.websList[idx - 1]
+
+		if atomic.CompareAndSwapInt32(&web.CheckInProgress, 0, 1) {
+			if elapsedTime >= web.NextCheckPeriod {
 				//reset timer
-				module.websList[idx - 1].NextCheckPeriod = module.websList[idx - 1].CheckPeriod
+				web.NextCheckPeriod = web.CheckPeriod
 
 				//check this web
-				if module.r.Acquire() {
+				if m.r.Acquire() {
 					go func(web *WebItem) {
 						var newStatus int32
 
@@ -250,12 +260,12 @@ func (module *Module) checkWebs(elapsedTime time.Duration) {
 												allMatches = false
 											}
 
-											if allMatches == false {
+											if !allMatches {
 												break
 											}
 										}
 
-										if allMatches == false {
+										if !allMatches {
 											newStatus = 1
 										}
 									}
@@ -277,16 +287,16 @@ func (module *Module) checkWebs(elapsedTime time.Duration) {
 								}
 							}
 
-							runSaveState()
+							m.runSaveState()
 						}
 
 						//notify only if status changed from true to false
 						if oldStatus == 1 && newStatus == 0 {
-							if module.r.Acquire() {
+							if m.r.Acquire() {
 								go func(web *WebItem) {
 									_ = logger.Log(web.Severity, web.Channel, "Site '%s' is down.", web.Url)
 
-									module.r.Release()
+									m.r.Release()
 								}(web)
 							}
 						}
@@ -294,19 +304,19 @@ func (module *Module) checkWebs(elapsedTime time.Duration) {
 						atomic.StoreInt32(&web.CheckInProgress, 0)
 
 						select {
-						case module.checkDone <- struct{}{}:
-						case <-module.shutdownSignal:
+						case m.checkDone <- struct{}{}:
+						case <-m.shutdownSignal:
 						}
 
-						module.r.Release()
-					}(&module.websList[idx - 1])
+						m.r.Release()
+					}(web)
 				} else {
-					atomic.StoreInt32(&module.websList[idx - 1].CheckInProgress, 0)
+					atomic.StoreInt32(&web.CheckInProgress, 0)
 				}
 			} else {
-				module.websList[idx - 1].NextCheckPeriod -= elapsedTime
+				web.NextCheckPeriod -= elapsedTime
 
-				atomic.StoreInt32(&module.websList[idx - 1].CheckInProgress, 0)
+				atomic.StoreInt32(&web.CheckInProgress, 0)
 			}
 		}
 	}
@@ -314,17 +324,18 @@ func (module *Module) checkWebs(elapsedTime time.Duration) {
 	return
 }
 
-func runSaveState() {
-	if webCheckerModule.r.Acquire() {
-		go func(module *Module) {
-			err := saveState(module.websList)
+func (m *Module) runSaveState() {
+	if m.r.Acquire() {
+		go func(m *Module) {
+			err := m.saveState()
 
 			if err != nil {
 				console.Error("Unable to save web checker state. [%v]", err)
 			}
 
-			module.r.Release()
-		}(webCheckerModule)
+			m.r.Release()
+		}(m)
 	}
+
 	return
 }

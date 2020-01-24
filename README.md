@@ -180,6 +180,10 @@ If true, messages are sent to the specified Slack channel.
 Designates the target Slack WebHook channel for messaage delivery. The channel format is `T00000000/B00000000/XXXXXXXXXXX`. See
 [this page](https://api.slack.com/messaging/webhooks#posting_with_webhooks) for details.
 
+##### `channels.{channel-name}.slack.severity`
+
+Sets the severity type of the notification: `error`, `warn` or `info`.
+
 ##### `channels.{channel-name}.email` (optional)
     
 Specifies the email delivery for this channel.
@@ -226,57 +230,85 @@ Specifies if the connection to the SMTP server must use a secure channel.
 
 #### `webs` (optional)
 
-Defines an optional array of one or more web sites to be monitored. If a site is down or the content remains the same, a warning notification is sent to the configured dhannels.
+Defines an optional array of one or more web sites to be monitored. If a site is down or the content remains the same, a warning notification is sent to the configured channels.
 
-##### `webs.url`
+##### `webs[].url`
 
 Specifies the web url to monitor.
 
-##### `webs.headers` (optional)
+##### `webs[].headers` (optional)
 
 Defines optionals headers to send in the request.
 
-##### `webs.checkPeriod`
+##### `webs[].checkPeriod`
 
 Establishes how often the check should be done. Time units are the same than `log.maxAge`.
 
-##### `webs.channel`
-
-Establishes the channel to use when a notification must be sent because the check failed.
-
-##### `webs.channel.content` (optional)
+##### `webs[].content` (optional)
 
 If a content is specified, besides checking if the web is online, its contents is checked. Define an array of one or more items to verify.
 
 This is useful for live pages where contents usually depends on a backend server. If you render a page and the contents is the same, probably the backend is not working properly.
 
-##### `webs.channel.content.search`
+##### `webs[].content.search`
 
 A regex string to search within the web page contents. Group check points inside parenthesis.
 
-##### `webs.channel.content.checkChanges`
+##### `webs[].content.checkChanges`
 
 An array of checkpoint indexes to verify (first index is 1). A regex string can contain more than one grouping sequence. Specify only the relevants to check if the content changed or not.
 
+##### `webs[].channel`
+
+Establishes the channel to use when a notification must be sent because the check failed.
+
+##### `webs[].severity`
+
+Sets the severity type of the notification: `error`, `warn` or `info`.
+
+#### `processes` (optional)
+
+Defines an optional array of one or more processes to monitor.
+
+##### `processes[].executableName`
+
+Specifies the process executable name. Wildcards accepted.
+
+##### `processes[].includeChilds` (optional)
+
+Specifies if forks of the same process must be monitored too.
+
+##### `processes[].channel`
+
+Establishes the channel to use when a notification must be sent because the process abnormally exits.
+
+##### `processes[].severity`
+
+Sets the severity type of the notification: `error`, `warn` or `info`.
+
 #### `freeDiskSpace` (optional)
 
-Defines an optional array of one or more disk devices to be monitored. If free disk space is smaller than the specified threshold, a warning notification is sent to the configured dhannels.
+Defines an optional array of one or more disk devices to be monitored. If free disk space is smaller than the specified threshold, a warning notification is sent to the configured channels.
 
-##### `freeDiskSpace.device`
+##### `freeDiskSpace[].device`
 
 Specifies the directory to monitor. E.g.: `C:\`, `/`, `/mnt/volume1/`.
 
-##### `freeDiskSpace.checkPeriod`
+##### `freeDiskSpace[].checkPeriod`
 
 Establishes how often the check should be done. Time units are the same than `log.maxAge`.
 
-##### `freeDiskSpace.minimumSpace`
+##### `freeDiskSpace[].minimumSpace`
 
 The minimum required space for this disk device. Units can be `b` or `bytes` for bytes; `k`, `kb` or `kilobytes` for kilobytes; `m`, ` mb` or `megabytes` for megabytes and `g`, ` gb` or `gigabytes` for gigabytes. Floating point numbers are accepted, i.e., `1.5G`.
 
-##### `freeDiskSpace.channel`
+##### `freeDiskSpace[].channel`
 
 Establishes the channel to use when a notification must be sent because the check failed.
+
+##### `freeDiskSpace[].severity`
+
+Sets the severity type of the notification: `error`, `warn` or `info`.
 
 # License
 
