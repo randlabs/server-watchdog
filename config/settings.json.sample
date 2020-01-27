@@ -54,6 +54,28 @@
 		}
 	],
 
+	"processes": [
+		{
+			"executableName": "**\\calculator.exe",
+			"includeChilds": true,
+			"channel": "default"
+		},
+		{
+			"executableName": "**\\mongod.exe",
+			"includeChilds": true,
+			"channel": "default"
+		}
+	],
+
+	"tcpPorts": [
+		{
+			"name": "MongoDB",
+			"address": "127.0.0.1",
+			"ports": "27017",
+			"channel": "default"
+		}
+	],
+
 	"freeDiskSpace": [
 		{
 			"device": "C:\\",

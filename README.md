@@ -105,6 +105,21 @@ Runs the server monitoring tool as a standalone application.
 			"channel": "default"
 		}
 	],
+	"processes": [
+		{
+			"executableName": "**\\mongod.exe",
+			"includeChilds": true,
+			"channel": "default"
+		}
+	],
+	"tcpPorts": [
+		{
+			"name": "MongoDB",
+			"address": "127.0.0.1",
+			"ports": "27017",
+			"channel": "default"
+		}
+	],
 	"freeDiskSpace": [
 		{
 			"device": "/mnt/volume1",
@@ -263,6 +278,30 @@ An array of checkpoint indexes to verify (first index is 1). A regex string can 
 Establishes the channel to use when a notification must be sent because the check failed.
 
 ##### `webs[].severity`
+
+Sets the severity type of the notification: `error`, `warn` or `info`.
+
+#### `tcpPorts` (optional)
+
+Defines an optional array of one or more TCP ports to monitor.
+
+##### `tcpPorts[].name`
+
+Specifies the name of a group of TCP ports.
+
+##### `tcpPorts[].address` (optional)
+
+Specifies the host or IP address to monitor.
+
+##### `tcpPorts[].ports` (optional)
+
+Specifies a list of ports to verify on the address above. Use a comma separated list of port numbers. Also you can use `#-#` to define a range of ports.
+
+##### `tcpPorts[].channel`
+
+Establishes the channel to use when a notification must be sent because the any of the tcp ports is not listening.
+
+##### `tcpPorts[].severity`
 
 Sets the severity type of the notification: `error`, `warn` or `info`.
 

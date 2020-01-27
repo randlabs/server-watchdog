@@ -70,7 +70,7 @@ func Start() error {
 			port.CheckPeriodX,
 			0,
 			sync.Mutex{},
-			port.PortsX.Clone(),
+			roaring.New(),
 			0,
 		}
 	}
@@ -192,7 +192,7 @@ func (m *Module) checkTcpPorts(elapsedTime time.Duration) {
 				//check this tcp port set
 				if m.r.Acquire() {
 					go func(port *TcpPortItem) {
-						status := make([]bool, port.LastCheckStatus.GetCardinality())
+						status := make([]bool, port.PortsX.GetCardinality())
 						wg := sync.WaitGroup{}
 
 						pIdx := 0
@@ -203,7 +203,7 @@ func (m *Module) checkTcpPorts(elapsedTime time.Duration) {
 							wg.Add(1)
 
 							go func(port *TcpPortItem, portNum uint32, pIdx int) {
-								conn, err := net.DialTimeout("tcp", net.JoinHostPort(port.Address, fmt.Sprint(portNum)), time.Second)
+								conn, err := net.DialTimeout("tcp", net.JoinHostPort(port.Address, fmt.Sprint(portNum)), 5 * time.Second)
 								if err == nil {
 									status[pIdx] = true
 								} else {
@@ -257,7 +257,7 @@ func (m *Module) checkTcpPorts(elapsedTime time.Duration) {
 						if dropDetected {
 							if m.r.Acquire() {
 								go func(port *TcpPortItem) {
-									_ = logger.Log(port.Severity, port.Channel, "TCP Ports '%s' are down.", port.Name)
+									_ = logger.Log(port.Severity, port.Channel, "TCP Ports of group '%s' are down.", port.Name)
 
 									m.r.Release()
 								}(port)
