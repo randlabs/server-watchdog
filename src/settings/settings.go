@@ -159,6 +159,26 @@ func Load() error {
 
 	//----
 
+	for idx := range Config.Processes {
+		proc := &Config.Processes[idx]
+
+		if len(proc.ExecutableName) == 0 {
+			return errors.New(fmt.Sprintf("Missing or invalid process' executable name."))
+		}
+
+		_, ok = Config.Channels[proc.Channel]
+		if !ok {
+			return errors.New(fmt.Sprintf("Channel not found for process \"%v\".", proc.ExecutableName))
+		}
+
+		proc.Severity = ValidateSeverity(proc.Severity)
+		if len(proc.Severity) == 0 {
+			return errors.New(fmt.Sprintf("Invalid severity for process \"%v\".", proc.ExecutableName))
+		}
+	}
+
+	//----
+
 	for idx := range Config.Webs {
 		web := &Config.Webs[idx]
 
@@ -171,11 +191,11 @@ func Load() error {
 			if !ok {
 				return errors.New(fmt.Sprintf("Invalid web check period value for web \"%v\".", web.Url))
 			}
-			if web.CheckPeriodX < 1 * time.Minute {
-				return errors.New(fmt.Sprintf("Web check period value for TCP Port \"%v\" cannot be lower than 1 minute.", web.Url))
+			if web.CheckPeriodX < 10 * time.Second {
+				return errors.New(fmt.Sprintf("Web check period value for \"%v\" cannot be lower than 10 seconds.", web.Url))
 			}
 		} else {
-			web.CheckPeriodX = -1
+			web.CheckPeriodX = 10 * time.Second
 		}
 
 		for contentIdx := range web.Content {
@@ -196,6 +216,19 @@ func Load() error {
 				}
 			}
 		}
+
+		if len(web.Timeout) > 0 {
+			web.TimeoutX, ok = parseDuration(web.Timeout)
+			if !ok {
+				return errors.New(fmt.Sprintf("Invalid web check timeout value for web \"%v\".", web.Url))
+			}
+			if web.TimeoutX < 10 * time.Second {
+				return errors.New(fmt.Sprintf("Web check timeout value for \"%v\" cannot be lower than 10 seconds.", web.Url))
+			}
+		} else {
+			web.TimeoutX = 10 * time.Second
+		}
+
 		_, ok = Config.Channels[web.Channel]
 		if !ok {
 			return errors.New(fmt.Sprintf("Channel not found for web \"%v\".", web.Url))
@@ -213,28 +246,40 @@ func Load() error {
 		port := &Config.TcpPorts[idx]
 
 		if len(port.Name) == 0 {
-			return errors.New(fmt.Sprintf("Missing or invalid TCP Port description name."))
+			return errors.New(fmt.Sprintf("Missing or invalid TCP port description name."))
 		}
 
 		if !valid.IsHost(port.Address) {
-			return errors.New(fmt.Sprintf("Missing or invalid address in TCP Port \"%v\".", port.Name))
+			return errors.New(fmt.Sprintf("Missing or invalid address in TCP port group \"%v\".", port.Name))
 		}
 
 		port.PortsX, ok = parsePortsList(port.Ports)
 		if !ok {
-			return errors.New(fmt.Sprintf("Missing or invalid port value/range in TCP Port \"%v\".", port.Name))
+			return errors.New(fmt.Sprintf("Missing or invalid port value/range in TCP port group \"%v\".", port.Name))
 		}
 
 		if len(port.CheckPeriod) > 0 {
 			port.CheckPeriodX, ok = parseDuration(port.CheckPeriod)
 			if !ok {
-				return errors.New(fmt.Sprintf("Invalid port check period value for TCP Port \"%v\".", port.Name))
+				return errors.New(fmt.Sprintf("Invalid check period value for TCP port group \"%v\".", port.Name))
 			}
-			if port.CheckPeriodX < 1 * time.Minute {
-				return errors.New(fmt.Sprintf("Check period value for TCP Port \"%v\" cannot be lower than 1 minute.", port.Name))
+			if port.CheckPeriodX < 10 * time.Second {
+				return errors.New(fmt.Sprintf("Check period value for TCP port group \"%v\" cannot be lower than 10 seconds.", port.Name))
 			}
 		} else {
-			port.CheckPeriodX = -1
+			port.CheckPeriodX = 10 * time.Second
+		}
+
+		if len(port.Timeout) > 0 {
+			port.TimeoutX, ok = parseDuration(port.Timeout)
+			if !ok {
+				return errors.New(fmt.Sprintf("Invalid check timeout value for TCP port group \"%v\".", port.Name))
+			}
+			if port.TimeoutX < 10 * time.Second {
+				return errors.New(fmt.Sprintf("Check timeout value for TCP port group \"%v\" cannot be lower than 10 seconds.", port.Name))
+			}
+		} else {
+			port.TimeoutX = 10 * time.Second
 		}
 
 		_, ok = Config.Channels[port.Channel]
@@ -248,25 +293,6 @@ func Load() error {
 		}
 	}
 
-	//----
-
-	for idx := range Config.Processes {
-		proc := &Config.Processes[idx]
-
-		if len(proc.ExecutableName) == 0 {
-			return errors.New(fmt.Sprintf("Missing or invalid process' executable name."))
-		}
-
-		_, ok = Config.Channels[proc.Channel]
-		if !ok {
-			return errors.New(fmt.Sprintf("Channel not found for process \"%v\".", proc.ExecutableName))
-		}
-
-		proc.Severity = ValidateSeverity(proc.Severity)
-		if len(proc.Severity) == 0 {
-			return errors.New(fmt.Sprintf("Invalid severity for process \"%v\".", proc.ExecutableName))
-		}
-	}
 	//----
 
 	for idx := range Config.FreeDiskSpace {

@@ -22,8 +22,8 @@ type SettingsJSON struct {
 		UseLocalTime bool `json:useLocalTime,omitempty"`
 	} `json:"log"`
 	Channels map[string]SettingsJSON_Channel   `json:"channels"`
-	Webs []SettingsJSON_Webs                   `json:"webs,omitempty"`
 	Processes []SettingsJSON_Processes         `json:"processes,omitempty"`
+	Webs []SettingsJSON_Webs                   `json:"webs,omitempty"`
 	TcpPorts []SettingsJSON_TcpPorts           `json:"tcpPorts,omitempty"`
 	FreeDiskSpace []SettingsJSON_FreeDiskSpace `json:"freeDiskSpace,omitempty"`
 }
@@ -59,12 +59,23 @@ type SettingsJSON_EMail_SmtpServer struct {
 	UseSSL   bool   `json:"useSSL,omitempty"`
 }
 
+type SettingsJSON_Processes struct {
+	FriendlyName   string    `json:"name,omitempty"`
+	ExecutableName string    `json:"executableName"`
+	CommandLineParams string `json:"args,omitempty"`
+	IncludeChilds  bool      `json:"includeChilds,omitempty"`
+	Channel        string    `json:"channel"`
+	Severity       string    `json:"severity,omitempty"`
+}
+
 type SettingsJSON_Webs struct {
 	Url          string                      `json:"url"`
 	Headers      *map[string]string          `json:"headers,omitempty"`
 	Content      []SettingsJSON_Webs_Content `json:"content,omitempty"`
 	CheckPeriod  string                      `json:"checkPeriod,omitempty"`
 	CheckPeriodX time.Duration
+	Timeout       string                     `json:"timeout,omitempty"`
+	TimeoutX      time.Duration
 	Channel      string                      `json:"channel"`
 	Severity     string                      `json:"severity,omitempty"`
 }
@@ -75,14 +86,6 @@ type SettingsJSON_Webs_Content struct {
 	SearchRegex  *regexp.Regexp
 }
 
-type SettingsJSON_Processes struct {
-	FriendlyName   string `json:"name,omitempty"`
-	ExecutableName string `json:"executableName"`
-	IncludeChilds  bool   `json:"includeChilds,omitempty"`
-	Channel        string `json:"channel"`
-	Severity       string `json:"severity,omitempty"`
-}
-
 type SettingsJSON_TcpPorts struct {
 	Name          string `json:"name"`
 	Address       string `json:"address"`
@@ -90,6 +93,8 @@ type SettingsJSON_TcpPorts struct {
 	PortsX        *roaring.Bitmap
 	CheckPeriod   string `json:"checkPeriod,omitempty"`
 	CheckPeriodX  time.Duration
+	Timeout       string `json:"timeout,omitempty"`
+	TimeoutX      time.Duration
 	Channel       string `json:"channel"`
 	Severity      string `json:"severity,omitempty"`
 }

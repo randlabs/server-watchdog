@@ -29,6 +29,7 @@ type WebItem struct {
 	Url             string
 	Headers         map[string]string
 	Content         []WebItem_Content
+	Timeout         time.Duration
 	Channel         string
 	Severity        string
 	CheckPeriod     time.Duration
@@ -86,6 +87,7 @@ func Start() error {
 			web.Url,
 			wh,
 			wc,
+			web.TimeoutX,
 			web.Channel,
 			web.Severity,
 			web.CheckPeriodX,
@@ -217,7 +219,7 @@ func (m *Module) checkWebs(elapsedTime time.Duration) {
 						newStatus = 0
 
 						client := http.Client{
-							Timeout: 10 * time.Second,
+							Timeout: web.Timeout,
 						}
 
 						req, _ := http.NewRequest("GET", web.Url, nil)

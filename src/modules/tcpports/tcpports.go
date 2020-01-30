@@ -29,6 +29,7 @@ type TcpPortItem struct {
 	Name                string
 	Address             string
 	PortsX              *roaring.Bitmap
+	Timeout             time.Duration
 	Channel             string
 	Severity            string
 	CheckPeriod         time.Duration
@@ -65,6 +66,7 @@ func Start() error {
 			port.Name,
 			port.Address,
 			port.PortsX,
+			port.TimeoutX,
 			port.Channel,
 			port.Severity,
 			port.CheckPeriodX,
@@ -203,7 +205,7 @@ func (m *Module) checkTcpPorts(elapsedTime time.Duration) {
 							wg.Add(1)
 
 							go func(port *TcpPortItem, portNum uint32, pIdx int) {
-								conn, err := net.DialTimeout("tcp", net.JoinHostPort(port.Address, fmt.Sprint(portNum)), 5 * time.Second)
+								conn, err := net.DialTimeout("tcp", net.JoinHostPort(port.Address, fmt.Sprint(portNum)), port.Timeout)
 								if err == nil {
 									status[pIdx] = true
 								} else {

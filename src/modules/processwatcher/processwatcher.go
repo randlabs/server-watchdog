@@ -8,8 +8,10 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"github.com/bmatcuk/doublestar"
+	"github.com/minio/minio/pkg/wildcard"
 	rp "github.com/randlabs/rundown-protection"
 	"github.com/randlabs/server-watchdog/console"
 	"github.com/randlabs/server-watchdog/modules/logger"
@@ -258,8 +260,49 @@ func (m *Module) checkForNewProcesses() {
 
 			//verify each process
 			for _, proc := range procs {
-				//get the process name
-				exeName, err := proc.Exe()
+				//get the process name & command-line
+				var exeName string
+				var cmdLine string
+
+				exeName, err = proc.Exe()
+				if err == nil {
+					cmdLine, err = proc.Cmdline()
+					if err == nil {
+						//strip first value from command-line (the process name)
+						cmdLineLen := len(cmdLine)
+						if cmdLineLen > 0 {
+							r, w := utf8.DecodeRuneInString(cmdLine)
+							idx := w
+
+							if r == '"' {
+								for idx < cmdLineLen {
+									r, w := utf8.DecodeRuneInString(cmdLine[idx:])
+									idx += w
+									if r == '"' {
+										break
+									}
+								}
+							} else {
+								for idx < cmdLineLen {
+									r, w := utf8.DecodeRuneInString(cmdLine[idx:])
+									idx += w
+									if r <= 32 {
+										break
+									}
+								}
+							}
+							for idx < cmdLineLen {
+								r, w := utf8.DecodeRuneInString(cmdLine[idx:])
+								if r > 32 {
+									break
+								}
+								idx += w
+							}
+							cmdLine = cmdLine[idx:]
+						}
+					}
+				}
+
 				if err == nil {
 					//check if it matches one of the configured processes
 					for _, cfgProc := range settings.Config.Processes {
@@ -269,6 +312,11 @@ func (m *Module) checkForNewProcesses() {
 							ok, _ = doublestar.PathMatch(cfgProc.ExecutableName, exeName)
 						} else {
 							ok, _ = doublestar.PathMatch(strings.ToLower(cfgProc.ExecutableName), strings.ToLower(exeName))
+						}
+						if ok && len(cfgProc.CommandLineParams) > 0 {
+							if !wildcard.Match(cfgProc.CommandLineParams, cmdLine) {
+								ok = false
+							}
 						}
 						if ok {
 							//we have a match

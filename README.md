@@ -273,6 +273,10 @@ A regex string to search within the web page contents. Group check points inside
 
 An array of checkpoint indexes to verify (first index is 1). A regex string can contain more than one grouping sequence. Specify only the relevants to check if the content changed or not.
 
+##### `webs[].timeout` (optional)
+
+Sets the maximum time to wait for the web to give a response. If not specified, a timeout of 10 seconds will be used.
+
 ##### `webs[].channel`
 
 Establishes the channel to use when a notification must be sent because the check failed.
@@ -297,6 +301,10 @@ Specifies the host or IP address to monitor.
 
 Specifies a list of ports to verify on the address above. Use a comma separated list of port numbers. Also you can use `#-#` to define a range of ports.
 
+##### `tcpPorts[].timeout` (optional)
+
+Sets the maximum time to wait for the port to connect. If not specified, a timeout of 10 seconds will be used.
+
 ##### `tcpPorts[].channel`
 
 Establishes the channel to use when a notification must be sent because the any of the tcp ports is not listening.
@@ -311,7 +319,11 @@ Defines an optional array of one or more processes to monitor.
 
 ##### `processes[].executableName`
 
-Specifies the process executable name. Wildcards accepted.
+Specifies the process executable name. Glob wildcards (`**`, `*` and `?`) accepted.
+
+##### `processes[].args` (optional)
+
+Specifies optional command line arguments to include in the check. Wildcards (`*` and `?`) accepted.
 
 ##### `processes[].includeChilds` (optional)
 

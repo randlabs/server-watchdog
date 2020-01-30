@@ -21,12 +21,12 @@ github.com/golang/snappy
 github.com/gookit/color
 # github.com/kardianos/service v1.0.0
 github.com/kardianos/service
-# github.com/klauspost/compress v1.8.2
+# github.com/klauspost/compress v1.9.7
 github.com/klauspost/compress/flate
 github.com/klauspost/compress/gzip
 github.com/klauspost/compress/zlib
-# github.com/klauspost/cpuid v1.2.1
-github.com/klauspost/cpuid
+# github.com/minio/minio v0.0.0-20200129151003-f6a7d4d29b15
+github.com/minio/minio/pkg/wildcard
 # github.com/mschoch/smat v0.0.0-20160514031455-90eadee771ae
 github.com/mschoch/smat
 # github.com/philhofer/fwd v1.0.0
@@ -63,7 +63,7 @@ github.com/vmihailenco/tagparser/internal
 github.com/vmihailenco/tagparser/internal/parser
 # github.com/willf/bitset v1.1.10
 github.com/willf/bitset
-# golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297
+# golang.org/x/net v0.0.0-20190923162816-aa69164e4478
 golang.org/x/net/context
 # golang.org/x/sys v0.0.0-20191115151921-52ab43148777
 golang.org/x/sys/unix
