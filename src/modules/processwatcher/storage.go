@@ -1,6 +1,7 @@
 package processwatcher
 
 import (
+	"github.com/randlabs/server-watchdog/modules/logger"
 	"github.com/randlabs/server-watchdog/utils/state"
 	"github.com/vmihailenco/msgpack/v4"
 )
@@ -22,22 +23,45 @@ const (
 
 //------------------------------------------------------------------------------
 
-func loadState() ([]ProcessWatcherStateItem, error) {
-	var loaded []ProcessWatcherStateItem
+func (m *Module) loadState() error {
+	var loadedItems []ProcessWatcherStateItem
 
 	b, err := state.LoadStateBlob(processWatcherStateFileName)
 	if err == nil && b != nil {
-		err = msgpack.Unmarshal(b, &loaded)
+		err = msgpack.Unmarshal(b, &loadedItems)
 	} else {
-		loaded = make([]ProcessWatcherStateItem, 0)
+		loadedItems = make([]ProcessWatcherStateItem, 0)
 	}
 
-	return loaded, err
+	if err == nil {
+		var stateModified = false
+
+		for _, v := range loadedItems {
+			err = m.addProcessInternal(v.Pid, v.Name, v.Severity, v.Channel)
+			if err != nil {
+				stateModified = true
+
+				if err.Error() == errProcessNotFound {
+					if len(v.Name) == 0 {
+						_ = logger.Log(v.Severity, v.Channel, "The process #%v has died while the server watcher was down.", v.Pid)
+					} else {
+						_ = logger.Log(v.Severity, v.Channel, "The process \"%v\" (#%v) has died while the server watcher was down.", v.Name, v.Pid)
+					}
+				}
+			}
+		}
+
+		if stateModified {
+			m.runSaveState()
+		}
+	}
+
+	return err
 }
 
-func saveState(items []*ProcessItem) error {
-	toSave := make([]ProcessWatcherStateItem, len(items))
-	for idx, v := range items {
+func (m *Module) saveState() error {
+	toSave := make([]ProcessWatcherStateItem, len(m.processList))
+	for idx, v := range m.processList {
 		toSave[idx] = ProcessWatcherStateItem{
 			Pid             : v.Pid,
 			Name            : v.Name,
@@ -50,5 +74,6 @@ func saveState(items []*ProcessItem) error {
 	if err == nil {
 		err = state.SaveStateBlob(processWatcherStateFileName, b)
 	}
+
 	return err
 }

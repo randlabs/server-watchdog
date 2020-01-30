@@ -22,20 +22,22 @@ const (
 
 //------------------------------------------------------------------------------
 
-func loadState(items []DeviceItem) error {
+func (m *Module) loadState() error {
 	b, err := state.LoadStateBlob(freeDiskSpaceCheckerStateFileName)
 	if err == nil && b != nil {
 		var loadedItems []FreeDiskSpaceCheckerStateItem
 
 		err = msgpack.Unmarshal(b, &loadedItems)
 		if err == nil {
-			for idx, v := range items {
-				for _, v2 := range loadedItems {
-					if v.HashCode == v2.HashCode {
-						if v2.LastCheckStatus {
-							atomic.StoreInt32(&items[idx].LastCheckStatus, 1)
+			for idx := range m.devicesList {
+				dev := &m.devicesList[idx]
+
+				for _, v := range loadedItems {
+					if dev.HashCode == v.HashCode {
+						if v.LastCheckStatus {
+							atomic.StoreInt32(&dev.LastCheckStatus, 1)
 						} else {
-							atomic.StoreInt32(&items[idx].LastCheckStatus, 0)
+							atomic.StoreInt32(&dev.LastCheckStatus, 0)
 						}
 						break
 					}
@@ -43,12 +45,13 @@ func loadState(items []DeviceItem) error {
 			}
 		}
 	}
+
 	return err
 }
 
-func saveState(items []DeviceItem) error {
-	toSave := make([]FreeDiskSpaceCheckerStateItem, len(items))
-	for idx, v := range items {
+func (m *Module) saveState() error {
+	toSave := make([]FreeDiskSpaceCheckerStateItem, len(m.devicesList))
+	for idx, v := range m.devicesList {
 		status := false
 		if atomic.LoadInt32(&v.LastCheckStatus) != 0 {
 			status = true
@@ -64,5 +67,6 @@ func saveState(items []DeviceItem) error {
 	if err == nil {
 		err = state.SaveStateBlob(freeDiskSpaceCheckerStateFileName, b)
 	}
+
 	return err
 }

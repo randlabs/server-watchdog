@@ -18,6 +18,7 @@ type Module struct {
 //------------------------------------------------------------------------------
 
 var module *Module
+var lock sync.RWMutex
 
 //------------------------------------------------------------------------------
 
@@ -30,32 +31,39 @@ func Start() error {
 		module = nil
 		return err
 	}
+
 	handlers.Initialize(module.svr.Router)
 
 	return nil
 }
 
 func Stop() {
-	if module != nil {
-		module.svr.Stop()
+	lock.Lock()
+	localModule := module
+	module = nil
+	lock.Unlock()
 
-		module = nil
+	if localModule != nil {
+		localModule.svr.Stop()
 	}
 
 	return
 }
 
 func Run(wg sync.WaitGroup) {
-	if module != nil {
+	lock.RLock()
+	localModule := module
+	lock.RUnlock()
+
+	if localModule != nil {
 		wg.Add(1)
 
 		go func() {
-			var err error
-
-			err = module.svr.Wait()
+			err := localModule.svr.Wait()
 			if err != nil {
 				console.Error("Server error [%v]", err)
 			}
+
 			wg.Done()
 		}()
 	}

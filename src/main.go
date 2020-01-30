@@ -7,6 +7,7 @@ import (
 	"github.com/randlabs/server-watchdog/modules/freediskspacechecker"
 	"github.com/randlabs/server-watchdog/modules/logger"
 	"github.com/randlabs/server-watchdog/modules/processwatcher"
+	"github.com/randlabs/server-watchdog/modules/tcpports"
 	"github.com/randlabs/server-watchdog/modules/webchecker"
 	"github.com/randlabs/server-watchdog/settings"
 	"github.com/randlabs/server-watchdog/utils/process"
@@ -53,7 +54,7 @@ func (p *program) Start(s service.Service) error {
 		err = freediskspacechecker.Start()
 		if err != nil {
 			console.Println("")
-			console.PrintlntError("Unable to create process monitor [%v]", err.Error())
+			console.PrintlntError("Unable to create free disk space monitor [%v]", err.Error())
 		}
 	}
 
@@ -61,7 +62,15 @@ func (p *program) Start(s service.Service) error {
 		err = webchecker.Start()
 		if err != nil {
 			console.Println("")
-			console.PrintlntError("Unable to create process monitor [%v]", err.Error())
+			console.PrintlntError("Unable to create web checker monitor [%v]", err.Error())
+		}
+	}
+
+	if err == nil {
+		err = tcpports.Start()
+		if err != nil {
+			console.Println("")
+			console.PrintlntError("Unable to create TCP ports monitor [%v]", err.Error())
 		}
 	}
 
@@ -98,6 +107,7 @@ func (p *program) run()  {
 	logger.Run(p.wg)
 	processwatcher.Run(p.wg)
 	webchecker.Run(p.wg)
+	tcpports.Run(p.wg)
 	freediskspacechecker.Run(p.wg)
 	backend.Run(p.wg)
 }
@@ -105,6 +115,7 @@ func (p *program) run()  {
 func (p *program) shutdown()  {
 	backend.Stop()
 	freediskspacechecker.Stop()
+	tcpports.Stop()
 	webchecker.Stop()
 	processwatcher.Stop()
 	logger.Stop()
@@ -122,12 +133,12 @@ func main() {
 	}
 
 	svcConfig := &service.Config{
-		Name:        "ServerWatcher",
+		Name:        "ServerWatchdog",
 		DisplayName: "Randlabs.IO Server Watcher service",
 		Description: "A service that acts as a centralized notification system and monitors processes, webs and disks.",
 	}
 	if runtime.GOOS != "windows" {
-		svcConfig.Name = "serverwatcher"
+		svcConfig.Name = "serverwatchdog"
 	}
 
 	if serviceCmdLineParam == "install" {

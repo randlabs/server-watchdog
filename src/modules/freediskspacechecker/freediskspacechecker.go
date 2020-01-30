@@ -36,25 +36,26 @@ type DeviceItem struct {
 
 //------------------------------------------------------------------------------
 
-var fdsCheckerModule *Module
+var module *Module
+var lock sync.RWMutex
 
 //------------------------------------------------------------------------------
 
 func Start() error {
 	//initialize module
-	fdsCheckerModule = &Module{}
-	fdsCheckerModule.shutdownSignal = make(chan struct{})
-	fdsCheckerModule.r.Initialize()
+	module = &Module{}
+	module.shutdownSignal = make(chan struct{})
+	module.r.Initialize()
 
 	//build devices list from settings
-	fdsCheckerModule.devicesList = make([]DeviceItem, len(settings.Config.FreeDiskSpace))
+	module.devicesList = make([]DeviceItem, len(settings.Config.FreeDiskSpace))
 	for idx, fds := range settings.Config.FreeDiskSpace {
 		h := fnv.New64a()
 		h.Sum([]byte(fds.Device))
 		h.Sum([]byte(fds.Channel))
 		h.Sum([]byte(fds.Severity))
 
-		fdsCheckerModule.devicesList[idx] = DeviceItem{
+		module.devicesList[idx] = DeviceItem{
 			h.Sum64(),
 			fds.Device,
 			fds.Channel,
@@ -67,10 +68,10 @@ func Start() error {
 		}
 	}
 
-	fdsCheckerModule.checkDone = make(chan struct{})
+	module.checkDone = make(chan struct{})
 
 	//load stored state
-	err := loadState(fdsCheckerModule.devicesList)
+	err := module.loadState()
 	if err != nil {
 		console.Error("Unable to load free disk space checker state. [%v]", err)
 		return err
@@ -80,28 +81,35 @@ func Start() error {
 }
 
 func Stop() {
-	if fdsCheckerModule != nil {
+	lock.Lock()
+	localModule := module
+	module = nil
+	lock.Unlock()
+
+	if localModule != nil {
 		//signal shutdown
-		close(fdsCheckerModule.shutdownSignal)
+		close(localModule.shutdownSignal)
 
 		//wait until all workers are done
-		fdsCheckerModule.r.Wait()
+		localModule.r.Wait()
 
-		close(fdsCheckerModule.checkDone)
-
-		fdsCheckerModule = nil
+		close(localModule.checkDone)
 	}
 	return
 }
 
 func Run(wg sync.WaitGroup) {
-	if fdsCheckerModule != nil {
+	lock.RLock()
+	localModule := module
+	lock.RUnlock()
+
+	if localModule != nil {
 		//start background loop
 		wg.Add(1)
 
-		if fdsCheckerModule.r.Acquire() {
+		if localModule.r.Acquire() {
 			go func() {
-				if len(fdsCheckerModule.devicesList) > 0 {
+				if len(localModule.devicesList) > 0 {
 					var timeToWait time.Duration
 
 					loop := true
@@ -111,10 +119,10 @@ func Run(wg sync.WaitGroup) {
 
 						//find next device to check
 						timeToWait = -1
-						for i := len(fdsCheckerModule.devicesList); i > 0; i-- {
-							if atomic.LoadInt32(&fdsCheckerModule.devicesList[i-1].CheckInProgress) == 0 {
-								if timeToWait < 0 || timeToWait > fdsCheckerModule.devicesList[i-1].NextCheckPeriod {
-									timeToWait = fdsCheckerModule.devicesList[i-1].NextCheckPeriod
+						for i := len(localModule.devicesList); i > 0; i-- {
+							if atomic.LoadInt32(&localModule.devicesList[i-1].CheckInProgress) == 0 {
+								if timeToWait < 0 || timeToWait > localModule.devicesList[i-1].NextCheckPeriod {
+									timeToWait = localModule.devicesList[i-1].NextCheckPeriod
 								}
 							}
 						}
@@ -122,35 +130,35 @@ func Run(wg sync.WaitGroup) {
 						start = time.Now()
 						if timeToWait >= 0 {
 							select {
-							case <-fdsCheckerModule.shutdownSignal:
+							case <-localModule.shutdownSignal:
 								loop = false
 
 							case <-time.After(timeToWait):
 								//check devices when the time to wait elapses
-								fdsCheckerModule.checkDevices(timeToWait)
+								localModule.checkDevices(timeToWait)
 
-							case <-fdsCheckerModule.checkDone:
+							case <-localModule.checkDone:
 								//if a device check has finished, check again
 								elapsed = time.Since(start)
-								fdsCheckerModule.checkDevices(elapsed)
+								localModule.checkDevices(elapsed)
 							}
 						} else {
 							select {
-							case <-fdsCheckerModule.shutdownSignal:
+							case <-localModule.shutdownSignal:
 								loop = false
 
-							case <-fdsCheckerModule.checkDone:
+							case <-localModule.checkDone:
 								//if a device check has finished, check for others
 								elapsed = time.Since(start)
-								fdsCheckerModule.checkDevices(elapsed)
+								localModule.checkDevices(elapsed)
 							}
 						}
 					}
 				} else {
-					<-fdsCheckerModule.shutdownSignal
+					<-localModule.shutdownSignal
 				}
 
-				fdsCheckerModule.r.Release()
+				localModule.r.Release()
 
 				wg.Done()
 			}()
@@ -164,15 +172,17 @@ func Run(wg sync.WaitGroup) {
 
 //------------------------------------------------------------------------------
 
-func (module *Module) checkDevices(elapsedTime time.Duration) {
-	for idx := len(module.devicesList); idx > 0; idx-- {
-		if atomic.CompareAndSwapInt32(&module.devicesList[idx - 1].CheckInProgress, 0, 1) {
-			if elapsedTime >= module.devicesList[idx - 1].NextCheckPeriod {
+func (m *Module) checkDevices(elapsedTime time.Duration) {
+	for idx := len(m.devicesList); idx > 0; idx-- {
+		dev := &m.devicesList[idx - 1]
+
+		if atomic.CompareAndSwapInt32(&dev.CheckInProgress, 0, 1) {
+			if elapsedTime >= dev.NextCheckPeriod {
 				//reset timer
-				module.devicesList[idx - 1].NextCheckPeriod = module.devicesList[idx - 1].CheckPeriod
+				dev.NextCheckPeriod = dev.CheckPeriod
 
 				//check this device
-				if module.r.Acquire() {
+				if m.r.Acquire() {
 					go func(dev *DeviceItem) {
 						var newStatus int32
 
@@ -186,17 +196,17 @@ func (module *Module) checkDevices(elapsedTime time.Duration) {
 
 						oldStatus := atomic.SwapInt32(&dev.LastCheckStatus, newStatus)
 						if oldStatus != newStatus {
-							runSaveState()
+							m.runSaveState()
 						}
 
 						//notify only if status changed from true to false
 						if oldStatus == 1 && newStatus == 0 {
-							if module.r.Acquire() {
+							if m.r.Acquire() {
 								go func(dev *DeviceItem) {
 									_ = logger.Log(dev.Severity, dev.Channel, "Disk space on '%s' is low.",
 										dev.Device)
 
-									module.r.Release()
+									m.r.Release()
 								}(dev)
 							}
 						}
@@ -204,19 +214,19 @@ func (module *Module) checkDevices(elapsedTime time.Duration) {
 						atomic.StoreInt32(&dev.CheckInProgress, 0)
 
 						select {
-							case module.checkDone <- struct{}{}:
-							case <-module.shutdownSignal:
+							case m.checkDone <- struct{}{}:
+							case <-m.shutdownSignal:
 						}
 
-						module.r.Release()
-					}(&module.devicesList[idx - 1])
+						m.r.Release()
+					}(dev)
 				} else {
-					atomic.StoreInt32(&module.devicesList[idx - 1].CheckInProgress, 0)
+					atomic.StoreInt32(&dev.CheckInProgress, 0)
 				}
 			} else {
-				module.devicesList[idx - 1].NextCheckPeriod -= elapsedTime
+				dev.NextCheckPeriod -= elapsedTime
 
-				atomic.StoreInt32(&module.devicesList[idx - 1].CheckInProgress, 0)
+				atomic.StoreInt32(&dev.CheckInProgress, 0)
 			}
 		}
 	}
@@ -224,17 +234,17 @@ func (module *Module) checkDevices(elapsedTime time.Duration) {
 	return
 }
 
-func runSaveState() {
-	if fdsCheckerModule.r.Acquire() {
-		go func(module *Module) {
-			err := saveState(module.devicesList)
+func (m *Module) runSaveState() {
+	if m.r.Acquire() {
+		go func(m *Module) {
+			err := m.saveState()
 
 			if err != nil {
 				console.Error("Unable to save free disk space checker state. [%v]", err)
 			}
 
-			module.r.Release()
-		}(fdsCheckerModule)
+			m.r.Release()
+		}(m)
 	}
 	return
 }
