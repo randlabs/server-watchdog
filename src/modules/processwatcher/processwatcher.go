@@ -2,7 +2,6 @@ package processwatcher
 
 import (
 	"errors"
-	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -130,6 +129,8 @@ func AddProcess(pid int, name string, severity string, channel string) error {
 		err = localModule.addProcessInternal(pid, name, severity, channel)
 		if err == nil {
 			localModule.runSaveState()
+		} else {
+			console.Error("Unable to watch process #%v (%v) [%v]", pid, name, err.Error())
 		}
 
 		localModule.r.Release()
@@ -198,8 +199,8 @@ func (m *Module) addProcessInternal(pid int, name string, severity string, chann
 		}
 	}
 	if i == 0 {
-		_, err = os.FindProcess(pid)
-		if err == nil {
+		ok, err := gops_proc.PidExists(int32(pid))
+		if ok && err == nil {
 			p := &ProcessItem{
 				Pid: pid,
 				Name: name,
@@ -225,8 +226,8 @@ func (m *Module) checkForDeadProcesses() {
 	for i := listLen; i > 0; i-- {
 		p := m.processList[i - 1]
 
-		_, err := os.FindProcess(p.Pid)
-		if err != nil {
+		ok, err := gops_proc.PidExists(int32(p.Pid))
+		if (!ok) || err != nil {
 			//found a terminated process
 
 			//log it
@@ -363,7 +364,10 @@ func (m *Module) checkForNewProcesses() {
 									name = filepath.Base(exeName)
 								}
 
-								_ = m.addProcessInternal(int(proc.Pid), name, cfgProc.Severity, cfgProc.Channel)
+								err = m.addProcessInternal(int(proc.Pid), name, cfgProc.Severity, cfgProc.Channel)
+								if err != nil {
+									console.Error("Unable to watch process #%v (%v) [%v]", int(proc.Pid), name, err.Error())
+								}
 							}
 							break
 						}
