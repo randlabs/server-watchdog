@@ -27,64 +27,50 @@ type program struct {
 func (p *program) Start(s service.Service) error {
 	p.initiateShutdown = make(chan struct{}, 1)
 
-	console.Print("Initializing... ")
 	err := settings.Load()
 	if err != nil {
-		console.Println("")
-		console.PrintlntError("%v", err.Error())
+		console.Error("%v", err.Error())
+		goto Done
 	}
 
-	if err == nil {
-		err = logger.Start() // Must be initialize first
-		if err != nil {
-			console.Println("")
-			console.PrintlntError("Unable to create loggers [%v]", err.Error())
-		}
+	err = logger.Start() // Must be initialize first
+	if err != nil {
+		console.Error("Unable to create loggers [%v]", err.Error())
+		goto Done
 	}
 
-	if err == nil {
-		err = processwatcher.Start()
-		if err != nil {
-			console.Println("")
-			console.PrintlntError("Unable to create process monitor [%v]", err.Error())
-		}
+	err = processwatcher.Start()
+	if err != nil {
+		console.Error("Unable to create process monitor [%v]", err.Error())
+		goto Done
 	}
 
-	if err == nil {
-		err = freediskspacechecker.Start()
-		if err != nil {
-			console.Println("")
-			console.PrintlntError("Unable to create free disk space monitor [%v]", err.Error())
-		}
+	err = freediskspacechecker.Start()
+	if err != nil {
+		console.Error("Unable to create free disk space monitor [%v]", err.Error())
+		goto Done
 	}
 
-	if err == nil {
-		err = webchecker.Start()
-		if err != nil {
-			console.Println("")
-			console.PrintlntError("Unable to create web checker monitor [%v]", err.Error())
-		}
+	err = webchecker.Start()
+	if err != nil {
+		console.Error("Unable to create web checker monitor [%v]", err.Error())
+		goto Done
 	}
 
-	if err == nil {
-		err = tcpports.Start()
-		if err != nil {
-			console.Println("")
-			console.PrintlntError("Unable to create TCP ports monitor [%v]", err.Error())
-		}
+	err = tcpports.Start()
+	if err != nil {
+		console.Error("Unable to create TCP ports monitor [%v]", err.Error())
+		goto Done
 	}
 
-	if err == nil {
-		err = backend.Start()
-		if err != nil {
-			console.Println("")
-			console.PrintlntError("Unable to create server [%v]", err.Error())
-		}
+	err = backend.Start()
+	if err != nil {
+		console.Error("Unable to create server [%v]", err.Error())
+		goto Done
 	}
 
+Done:
 	if err == nil {
-		console.PrintlnSuccess()
-
 		go p.run()
 	} else {
 		p.shutdown()
@@ -93,16 +79,12 @@ func (p *program) Start(s service.Service) error {
 }
 
 func (p *program) Stop(s service.Service) error {
-	console.Print("Shutting down... ")
 	p.shutdown()
-	console.PrintlnSuccess()
 	return nil
 }
 
 func (p *program) run()  {
-	if service.Interactive() {
-		console.Info("Running server at port %v", settings.Config.Server.Port)
-	}
+	console.Info("Running server at port %v", settings.Config.Server.Port)
 
 	logger.Run(p.wg)
 	processwatcher.Run(p.wg)
@@ -153,17 +135,25 @@ func main() {
 
 	prg := &program{}
 	s, err := service.New(prg, svcConfig)
-	if err == nil {
-		if len(serviceCmdLineParam) == 0 {
-			err = s.Run()
-			// no need to print an error message because already printer by the start function
-		} else {
-			err = service.Control(s, serviceCmdLineParam)
-			if err != nil {
-				console.Error("Unable to send control code [%v]", err.Error())
-			}
-		}
-	} else {
+	if err != nil {
 		console.Error("Unable to initialize application [%v]", err.Error())
+		return
 	}
+	if len(serviceCmdLineParam) == 0 {
+		err = console.SetupService(s)
+		if err != nil {
+			console.Error("Unable to setup service logger [%v]", err.Error())
+			return
+		}
+
+		_ = s.Run()
+		// no need to print an error message because already printer by the start function
+	} else {
+		err = service.Control(s, serviceCmdLineParam)
+		if err != nil {
+			console.Error("Unable to send control code [%v]", err.Error())
+			return
+		}
+	}
+	return
 }

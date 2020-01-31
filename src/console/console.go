@@ -2,6 +2,7 @@ package console
 
 import (
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -12,81 +13,109 @@ import (
 
 //------------------------------------------------------------------------------
 
-var m sync.Mutex
+const(
+	classInfo int = 0
+	classWarn = 1
+	classError = 2
+)
 
 //------------------------------------------------------------------------------
 
-func Print(format string, a ...interface{}) {
-	if service.Interactive() {
-		color.Print(fmt.Sprintf(format, a...))
-	}
-}
+var m sync.Mutex
+var serviceLogger *service.Logger
 
-func Println(format string, a ...interface{}) {
-	if service.Interactive() {
-		color.Println(fmt.Sprintf(format, a...))
+//------------------------------------------------------------------------------
+
+func SetupService(s service.Service) error {
+	lg, err := s.Logger(nil)
+	if err == nil {
+		serviceLogger = &lg
 	}
+	return err
 }
 
 func Info(format string, a ...interface{}) {
-	if service.Interactive() {
-		printCommon("", color.Info, "INFO", getTimestamp(), fmt.Sprintf(format, a...))
-	}
+	printCommon("", classInfo, getTimestamp(), fmt.Sprintf(format, a...))
+	return
 }
 
 func Warn(format string, a ...interface{}) {
-	if service.Interactive() {
-		printCommon("", color.Warn, "WARN", getTimestamp(), fmt.Sprintf(format, a...))
-	}
+	printCommon("", classWarn, getTimestamp(), fmt.Sprintf(format, a...))
+	return
 }
 
 func Error(format string, a ...interface{}) {
-	if service.Interactive() {
-		printCommon("", color.Error, "ERROR", getTimestamp(), fmt.Sprintf(format, a...))
-	}
-}
-
-func PrintlnSuccess() {
-	if service.Interactive() {
-		color.LightGreen.Println("OK")
-	}
-}
-
-func PrintlntError(format string, a ...interface{}) {
-	if service.Interactive() {
-		color.Error.Println(fmt.Sprintf(format, a...))
-	}
+	printCommon("", classError, getTimestamp(), fmt.Sprintf(format, a...))
+	return
 }
 
 func LogInfo(title string, timestamp string, msg string) {
-	if service.Interactive() {
-		printCommon(title, color.Info, "INFO", timestamp, msg)
-	}
+	printCommon(title, classInfo, timestamp, msg)
+	return
 }
 
 func LogWarn(title string, timestamp string, msg string) {
-	printCommon(title, color.Warn, "WARN", timestamp, msg)
+	printCommon(title, classWarn, timestamp, msg)
 	return
 }
 
 func LogError(title string, timestamp string, msg string) {
-	if service.Interactive() {
-		printCommon(title, color.Error, "ERROR", timestamp, msg)
-	}
+	printCommon(title, classError, timestamp, msg)
+	return
 }
 
 //------------------------------------------------------------------------------
 
-func printCommon(title string, theme *color.Theme, label string, timestamp string, msg string) {
-	m.Lock()
-	defer m.Unlock()
+func printCommon(title string, cls int, timestamp string, msg string) {
+	if service.Interactive() || serviceLogger == nil {
+		m.Lock()
+		defer m.Unlock()
 
-	color.Print(timestamp + " ")
-	theme.Print("[" + label + "]", )
-	if len(title) > 0 {
-		color.Print(" " + title)
+		if cls == classInfo {
+			color.SetOutput(os.Stdout)
+		} else {
+			color.SetOutput(os.Stderr)
+		}
+
+		color.Printf("%v ", timestamp)
+
+		switch cls {
+		case classInfo:
+			color.Info.Print("[INFO]")
+		case classWarn:
+			color.Warn.Print("[WARN]")
+		case classError:
+			color.Error.Print("[ERROR]")
+		}
+
+		if len(title) > 0 {
+			color.Printf(" %v", title)
+		}
+
+		color.Printf(" - %v\n", msg)
+
+		color.ResetOutput()
+	} else {
+		if len(title) > 0 {
+			switch cls {
+			case classInfo:
+				(*serviceLogger).Infof("[INFO] %v - %v", title, msg)
+			case classWarn:
+				(*serviceLogger).Warningf("[WARN] %v - %v", title, msg)
+			case classError:
+				(*serviceLogger).Errorf("[ERROR] %v - %v", title, msg)
+			}
+		} else {
+			switch cls {
+			case classInfo:
+				(*serviceLogger).Infof("[INFO] - %v", msg)
+			case classWarn:
+				(*serviceLogger).Warningf("[WARN] - %v", msg)
+			case classError:
+				(*serviceLogger).Errorf("[ERROR] - %v", msg)
+			}
+		}
 	}
-	color.Print(" - " + msg + "\n", )
 	return
 }
 
