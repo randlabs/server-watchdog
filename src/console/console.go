@@ -14,9 +14,10 @@ import (
 //------------------------------------------------------------------------------
 
 const(
-	classInfo int = 0
+	classError int = 0
 	classWarn = 1
-	classError = 2
+	classInfo = 2
+	classDebug = 3
 )
 
 //------------------------------------------------------------------------------
@@ -34,8 +35,8 @@ func SetupService(s service.Service) error {
 	return err
 }
 
-func Info(format string, a ...interface{}) {
-	printCommon("", classInfo, getTimestamp(), fmt.Sprintf(format, a...))
+func Error(format string, a ...interface{}) {
+	printCommon("", classError, getTimestamp(), fmt.Sprintf(format, a...))
 	return
 }
 
@@ -44,13 +45,18 @@ func Warn(format string, a ...interface{}) {
 	return
 }
 
-func Error(format string, a ...interface{}) {
-	printCommon("", classError, getTimestamp(), fmt.Sprintf(format, a...))
+func Info(format string, a ...interface{}) {
+	printCommon("", classInfo, getTimestamp(), fmt.Sprintf(format, a...))
 	return
 }
 
-func LogInfo(title string, timestamp string, msg string) {
-	printCommon(title, classInfo, timestamp, msg)
+func Debug(format string, a ...interface{}) {
+	printCommon("", classDebug, getTimestamp(), fmt.Sprintf(format, a...))
+	return
+}
+
+func LogError(title string, timestamp string, msg string) {
+	printCommon(title, classError, timestamp, msg)
 	return
 }
 
@@ -59,8 +65,13 @@ func LogWarn(title string, timestamp string, msg string) {
 	return
 }
 
-func LogError(title string, timestamp string, msg string) {
-	printCommon(title, classError, timestamp, msg)
+func LogInfo(title string, timestamp string, msg string) {
+	printCommon(title, classInfo, timestamp, msg)
+	return
+}
+
+func LogDebug(title string, timestamp string, msg string) {
+	printCommon(title, classDebug, timestamp, msg)
 	return
 }
 
@@ -71,7 +82,7 @@ func printCommon(title string, cls int, timestamp string, msg string) {
 		m.Lock()
 		defer m.Unlock()
 
-		if cls == classInfo {
+		if cls == classInfo || cls == classDebug {
 			color.SetOutput(os.Stdout)
 		} else {
 			color.SetOutput(os.Stderr)
@@ -80,12 +91,14 @@ func printCommon(title string, cls int, timestamp string, msg string) {
 		color.Printf("%v ", timestamp)
 
 		switch cls {
-		case classInfo:
-			color.Info.Print("[INFO]")
-		case classWarn:
-			color.Warn.Print("[WARN]")
 		case classError:
 			color.Error.Print("[ERROR]")
+		case classWarn:
+			color.Warn.Print("[WARN]")
+		case classInfo:
+			color.Info.Print("[INFO]")
+		case classDebug:
+			color.Debug.Print("[DEBUG]")
 		}
 
 		if len(title) > 0 {
@@ -98,21 +111,25 @@ func printCommon(title string, cls int, timestamp string, msg string) {
 	} else {
 		if len(title) > 0 {
 			switch cls {
-			case classInfo:
-				(*serviceLogger).Infof("[INFO] %v - %v", title, msg)
-			case classWarn:
-				(*serviceLogger).Warningf("[WARN] %v - %v", title, msg)
 			case classError:
 				(*serviceLogger).Errorf("[ERROR] %v - %v", title, msg)
+			case classWarn:
+				(*serviceLogger).Warningf("[WARN] %v - %v", title, msg)
+			case classInfo:
+				(*serviceLogger).Infof("[INFO] %v - %v", title, msg)
+			case classDebug:
+				(*serviceLogger).Infof("[DEBUG] %v - %v", title, msg)
 			}
 		} else {
 			switch cls {
-			case classInfo:
-				(*serviceLogger).Infof("[INFO] - %v", msg)
-			case classWarn:
-				(*serviceLogger).Warningf("[WARN] - %v", msg)
 			case classError:
 				(*serviceLogger).Errorf("[ERROR] - %v", msg)
+			case classWarn:
+				(*serviceLogger).Warningf("[WARN] - %v", msg)
+			case classInfo:
+				(*serviceLogger).Infof("[INFO] - %v", msg)
+			case classDebug:
+				(*serviceLogger).Infof("[DEBUG] - %v", msg)
 			}
 		}
 	}

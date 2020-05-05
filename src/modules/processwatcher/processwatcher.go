@@ -32,6 +32,7 @@ type ProcessItem struct {
 	Name           string
 	Channel        string
 	Severity       string
+	MaxMemUsage    string
 }
 
 //------------------------------------------------------------------------------
@@ -115,7 +116,7 @@ func Run(wg sync.WaitGroup) {
 	return
 }
 
-func AddProcess(pid int, name string, severity string, channel string) error {
+func AddProcess(pid int, name string, maxMemUsage string, severity string, channel string) error {
 	lock.RLock()
 	localModule := module
 	lock.RUnlock()
@@ -126,7 +127,7 @@ func AddProcess(pid int, name string, severity string, channel string) error {
 
 	var err error = nil
 	if localModule.r.Acquire() {
-		err = localModule.addProcessInternal(pid, name, severity, channel)
+		err = localModule.addProcessInternal(pid, name, maxMemUsage, severity, channel)
 		if err == nil {
 			localModule.runSaveState()
 		} else {
@@ -182,7 +183,7 @@ func RemoveProcess(pid int, channel string) error {
 
 //------------------------------------------------------------------------------
 
-func (m *Module) addProcessInternal(pid int, name string, severity string, channel string) error {
+func (m *Module) addProcessInternal(pid int, name string, maxMemUsage string, severity string, channel string) error {
 	var i int
 	var err error = nil
 
@@ -364,7 +365,7 @@ func (m *Module) checkForNewProcesses() {
 									name = filepath.Base(exeName)
 								}
 
-								err = m.addProcessInternal(int(proc.Pid), name, cfgProc.Severity, cfgProc.Channel)
+								err = m.addProcessInternal(int(proc.Pid), name, "", cfgProc.Severity, cfgProc.Channel)
 								if err != nil {
 									console.Error("Unable to watch process #%v (%v) [%v]", int(proc.Pid), name, err.Error())
 								}

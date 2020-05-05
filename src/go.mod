@@ -19,3 +19,5 @@ require (
 	github.com/vmihailenco/msgpack/v4 v4.2.1
 	google.golang.org/appengine v1.6.5 // indirect
 )
+
+replace github.com/shirou/gopsutil v2.19.12+incompatible => github.com/mxmauro/gopsutil v2.20.4+incompatible

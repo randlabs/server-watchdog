@@ -136,8 +136,8 @@ func Run(wg sync.WaitGroup) {
 	return
 }
 
-func Info(channel string, timestamp string, msg string) {
-	fileModule.writeFileLog(channel, "[INFO]", timestamp, msg)
+func Error(channel string, timestamp string, msg string) {
+	fileModule.writeFileLog(channel, "[ERROR]", timestamp, msg)
 	return
 }
 
@@ -146,8 +146,13 @@ func Warn(channel string, timestamp string, msg string) {
 	return
 }
 
-func Error(channel string, timestamp string, msg string) {
-	fileModule.writeFileLog(channel, "[ERROR]", timestamp, msg)
+func Info(channel string, timestamp string, msg string) {
+	fileModule.writeFileLog(channel, "[INFO]", timestamp, msg)
+	return
+}
+
+func Debug(channel string, timestamp string, msg string) {
+	fileModule.writeFileLog(channel, "[DEBUG]", timestamp, msg)
 	return
 }
 

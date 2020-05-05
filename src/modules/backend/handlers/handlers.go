@@ -93,7 +93,7 @@ func onPostWatchProcess(ctx *server.RequestCtx) {
 	}
 
 	//add to watch list
-	err = processwatcher.AddProcess(r.Pid, r.Name, r.Severity, r.Channel)
+	err = processwatcher.AddProcess(r.Pid, r.Name, r.MaxMemUsage, r.Severity, r.Channel)
 	if err != nil {
 		server.SendBadRequest(ctx, err.Error())
 		return
