@@ -1,6 +1,7 @@
 package webchecker
 
 import (
+	"github.com/randlabs/server-watchdog/modules/logger"
 	"hash/fnv"
 	"io/ioutil"
 	"net/http"
@@ -11,7 +12,6 @@ import (
 
 	rp "github.com/randlabs/rundown-protection"
 	"github.com/randlabs/server-watchdog/console"
-	"github.com/randlabs/server-watchdog/modules/logger"
 	"github.com/randlabs/server-watchdog/settings"
 )
 
@@ -230,49 +230,52 @@ func (m *Module) checkWebs(elapsedTime time.Duration) {
 						resp, err := client.Do(req)
 						if err == nil {
 							if resp.StatusCode == http.StatusOK {
+								bodyString := ""
 								if web.Content != nil {
 									bodyBytes, err := ioutil.ReadAll(resp.Body)
 									if err == nil {
-										allMatches := true
+										bodyString = string(bodyBytes)
+									}
+								}
 
-										bodyString := string(bodyBytes)
+								if err == nil {
+									allMatches := true
 
-										for contentIdx := range web.Content {
-											wc := &web.Content[contentIdx]
+									for contentIdx := range web.Content {
+										wc := &web.Content[contentIdx]
 
-											matches := wc.SearchRegex.FindStringSubmatch(bodyString)
-											matchesCount := uint(len(matches))
-											if matchesCount > 0 {
-												matches = matches[1:]
-												matchesCount -= 1
-											}
+										matches := wc.SearchRegex.FindStringSubmatch(bodyString)
+										matchesCount := uint(len(matches))
+										if matchesCount > 0 {
+											matches = matches[1:]
+											matchesCount -= 1
+										}
 
-											for idx := range wc.CheckChanges {
-												matchIndex := wc.CheckChanges[idx] - 1
-												if matchIndex >= matchesCount {
-													allMatches = false
-													break
-												}
-
-												if web.Content[contentIdx].LastContent[idx] == matches[matchIndex] {
-													break
-												}
-
-												web.Content[contentIdx].LastContent[idx] = matches[matchIndex]
+										for idx := range wc.CheckChanges {
+											matchIndex := wc.CheckChanges[idx] - 1
+											if matchIndex >= matchesCount {
 												allMatches = false
-											}
-
-											if !allMatches {
 												break
 											}
+
+											if web.Content[contentIdx].LastContent[idx] == matches[matchIndex] {
+												break
+											}
+
+											web.Content[contentIdx].LastContent[idx] = matches[matchIndex]
+											allMatches = false
 										}
 
 										if !allMatches {
-											newStatus = 1
+											break
 										}
 									}
-								} else {
-									newStatus = 1
+
+									if !allMatches {
+										newStatus = 1
+									} else {
+										newStatus = -1
+									}
 								}
 							}
 
@@ -281,25 +284,22 @@ func (m *Module) checkWebs(elapsedTime time.Duration) {
 
 						oldStatus := atomic.SwapInt32(&web.LastCheckStatus, newStatus)
 						if oldStatus != newStatus {
-							if newStatus == 0 {
-								for contentIdx := range web.Content {
-									for idx := range web.Content[contentIdx].LastContent {
-										web.Content[contentIdx].LastContent[idx] = ""
-									}
-								}
-							}
-
 							m.runSaveState()
 						}
 
 						//notify only if status changed from true to false
-						if oldStatus == 1 && newStatus == 0 {
+						if oldStatus == 1 && newStatus <= 0 {
 							if m.r.Acquire() {
-								go func(web *WebItem) {
-									_ = logger.Log(web.Severity, web.Channel, "Site '%s' is down.", web.Url)
+								go func(web *WebItem, newStatus int32) {
+									switch newStatus {
+									case 0:
+										_ = logger.Log(web.Severity, web.Channel, "Site '%s' is down.", web.Url)
+									case -1:
+										_ = logger.Log(web.Severity, web.Channel, "Site '%s' is stalled.", web.Url)
+									}
 
 									m.r.Release()
-								}(web)
+								}(web, newStatus)
 							}
 						}
 

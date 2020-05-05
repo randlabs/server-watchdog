@@ -9,10 +9,11 @@ type NotifyRequest struct {
 }
 
 type WatchProcessRequest struct {
-	Channel  string `json:"channel"`
-	Pid      int `json:"pid"`
-	Name     string `json:"name,omitempty"`
-	Severity string `json:"severity,omitempty"`
+	Channel     string `json:"channel"`
+	Pid         int `json:"pid"`
+	MaxMemUsage string `json:"maxMem,omitempty"`
+	Name        string `json:"name,omitempty"`
+	Severity    string `json:"severity,omitempty"`
 }
 
 type UnwatchProcessRequest struct {

@@ -16,6 +16,7 @@ import (
 	valid "github.com/asaskevich/govalidator"
 	"github.com/randlabs/server-watchdog/utils/process"
 	"github.com/randlabs/server-watchdog/utils/stringparser"
+	"github.com/ricochet2200/go-disk-usage/du"
 )
 
 //------------------------------------------------------------------------------
@@ -76,7 +77,7 @@ func Load() error {
 	//----
 
 	if len(Config.Log.MaxAge) > 0 {
-		Config.Log.MaxAgeX, ok = parseDuration(Config.Log.MaxAge)
+		Config.Log.MaxAgeX, ok = ValidateTimeSpan(Config.Log.MaxAge)
 		if !ok {
 			return errors.New("Invalid log files max age value.")
 		}
@@ -187,7 +188,7 @@ func Load() error {
 		}
 
 		if len(web.CheckPeriod) > 0 {
-			web.CheckPeriodX, ok = parseDuration(web.CheckPeriod)
+			web.CheckPeriodX, ok = ValidateTimeSpan(web.CheckPeriod)
 			if !ok {
 				return errors.New(fmt.Sprintf("Invalid web check period value for web \"%v\".", web.Url))
 			}
@@ -218,7 +219,7 @@ func Load() error {
 		}
 
 		if len(web.Timeout) > 0 {
-			web.TimeoutX, ok = parseDuration(web.Timeout)
+			web.TimeoutX, ok = ValidateTimeSpan(web.Timeout)
 			if !ok {
 				return errors.New(fmt.Sprintf("Invalid web check timeout value for web \"%v\".", web.Url))
 			}
@@ -259,7 +260,7 @@ func Load() error {
 		}
 
 		if len(port.CheckPeriod) > 0 {
-			port.CheckPeriodX, ok = parseDuration(port.CheckPeriod)
+			port.CheckPeriodX, ok = ValidateTimeSpan(port.CheckPeriod)
 			if !ok {
 				return errors.New(fmt.Sprintf("Invalid check period value for TCP port group \"%v\".", port.Name))
 			}
@@ -271,7 +272,7 @@ func Load() error {
 		}
 
 		if len(port.Timeout) > 0 {
-			port.TimeoutX, ok = parseDuration(port.Timeout)
+			port.TimeoutX, ok = ValidateTimeSpan(port.Timeout)
 			if !ok {
 				return errors.New(fmt.Sprintf("Invalid check timeout value for TCP port group \"%v\".", port.Name))
 			}
@@ -309,14 +310,20 @@ func Load() error {
 			}
 		}
 
-		fds.MinimumSpaceX, ok = parseMinimumRequiredSpace(fds.MinimumSpace)
+		diskUsage := du.NewDiskUsage(fds.Device)
+		if diskUsage.Size() == 0 {
+			return errors.New(fmt.Sprintf("Invalid or missing free disk space check device \"%v\".", fds.Device))
+		}
+		diskSize := diskUsage.Size()
+
+		fds.MinimumSpaceX, ok = ValidateMemoryAmount(fds.MinimumSpace, &diskSize)
 		if !ok {
 			return errors.New(fmt.Sprintf("Invalid free disk space check minimum value for device \"%v\".",
-				fds.Device))
+											fds.Device))
 		}
 
 		if len(fds.CheckPeriod) > 0 {
-			fds.CheckPeriodX, ok = parseDuration(fds.CheckPeriod)
+			fds.CheckPeriodX, ok = ValidateTimeSpan(fds.CheckPeriod)
 			if !ok {
 				return errors.New(fmt.Sprintf("Invalid free disk space check period value for device \"%v\".",
 												fds.Device))
@@ -362,6 +369,8 @@ func ValidateSeverity(severity string) string {
 	case "warn":
 		fallthrough
 	case "info":
+		fallthrough
+	case "debug":
 		return severity
 	case "warning":
 		return "warn"
@@ -378,9 +387,12 @@ func ValidateChannel(channel string) bool {
 	return ok
 }
 
-//------------------------------------------------------------------------------
+func ValidateMaxMemoryUsage(channel string) bool {
+	_, ok := Config.Channels[channel]
+	return ok
+}
 
-func parseDuration(t string) (time.Duration, bool) {
+func ValidateTimeSpan(t string) (time.Duration, bool) {
 	var d time.Duration
 
 	width := stringparser.SkipSpaces(t)
@@ -470,7 +482,7 @@ func parseDuration(t string) (time.Duration, bool) {
 	return d, true
 }
 
-func parseMinimumRequiredSpace(t string) (uint64, bool) {
+func ValidateMemoryAmount(t string, totalAvailable *uint64) (uint64, bool) {
 	var siz uint64
 	var w int
 
@@ -549,12 +561,23 @@ func parseMinimumRequiredSpace(t string) (uint64, bool) {
 		}
 		siz = uint64(value * 1073741824.0)
 
+	case "%":
+		if totalAvailable == nil {
+			return 0, false
+		}
+		if value < 0 || value > 100.0 {
+			return 0, false
+		}
+		siz = uint64(value / 100.0 * float64(*totalAvailable))
+
 	default:
 		return 0, false
 	}
 
 	return siz, true
 }
+
+//------------------------------------------------------------------------------
 
 func parsePortsList(p string) (*roaring.Bitmap, bool) {
 	var s string

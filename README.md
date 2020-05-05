@@ -197,7 +197,7 @@ Designates the target Slack WebHook channel for messaage delivery. The channel f
 
 ##### `channels.{channel-name}.slack.severity`
 
-Sets the severity type of the notification: `error`, `warn` or `info`.
+Sets the severity type of the notification: `error`, `warn`, `info` or `debug`.
 
 ##### `channels.{channel-name}.email` (optional)
     
@@ -283,7 +283,7 @@ Establishes the channel to use when a notification must be sent because the chec
 
 ##### `webs[].severity`
 
-Sets the severity type of the notification: `error`, `warn` or `info`.
+Sets the severity type of the notification: `error`, `warn`, `info` or `debug`.
 
 #### `tcpPorts` (optional)
 
@@ -311,7 +311,7 @@ Establishes the channel to use when a notification must be sent because the any 
 
 ##### `tcpPorts[].severity`
 
-Sets the severity type of the notification: `error`, `warn` or `info`.
+Sets the severity type of the notification: `error`, `warn`, `info` or `debug`.
 
 #### `processes` (optional)
 
@@ -335,7 +335,7 @@ Establishes the channel to use when a notification must be sent because the proc
 
 ##### `processes[].severity`
 
-Sets the severity type of the notification: `error`, `warn` or `info`.
+Sets the severity type of the notification: `error`, `warn`, `info` or `debug`.
 
 #### `freeDiskSpace` (optional)
 
@@ -359,7 +359,7 @@ Establishes the channel to use when a notification must be sent because the chec
 
 ##### `freeDiskSpace[].severity`
 
-Sets the severity type of the notification: `error`, `warn` or `info`.
+Sets the severity type of the notification: `error`, `warn`, `info` or `debug`.
 
 # License
 

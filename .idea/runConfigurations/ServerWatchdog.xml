@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="ServerWatchdog" type="GoApplicationRunConfiguration" factoryName="Go Application" activateToolWindowBeforeRun="false">
+  <configuration default="false" name="ServerWatchdog" type="GoApplicationRunConfiguration" factoryName="Go Application" activateToolWindowBeforeRun="false" show_console_on_std_err="true" show_console_on_std_out="true">
     <module name="server-watchdog" />
     <working_directory value="$PROJECT_DIR$/bin" />
     <go_parameters value="-i" />

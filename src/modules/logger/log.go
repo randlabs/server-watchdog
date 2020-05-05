@@ -54,6 +54,9 @@ func Log(severity string, channel string, format string, a ...interface{}) error
 	case "info":
 		LogInfo(channel, format, a...)
 
+	case "debug":
+		LogDebug(channel, format, a...)
+
 	default:
 		return errors.New("Invalid severity")
 	}
@@ -91,6 +94,17 @@ func LogInfo(channel string, format string, a ...interface{}) {
 	file.Info(channel, timestamp, msg)
 	slack.Info(channel, timestamp, msg)
 	email.Info(channel, timestamp, msg)
+	return
+}
+
+func LogDebug(channel string, format string, a ...interface{}) {
+	timestamp := getTimestamp()
+	msg := fmt.Sprintf(format, a...)
+
+	console.LogDebug(channel, timestamp, msg)
+	file.Debug(channel, timestamp, msg)
+	slack.Debug(channel, timestamp, msg)
+	email.Debug(channel, timestamp, msg)
 	return
 }
 

@@ -11,6 +11,7 @@ import (
 type ProcessWatcherStateItem struct {
 	Pid            int
 	Name           string
+	MaxMemUsage    string
 	Channel        string
 	Severity       string
 }
@@ -37,7 +38,7 @@ func (m *Module) loadState() error {
 		var stateModified = false
 
 		for _, v := range loadedItems {
-			err = m.addProcessInternal(v.Pid, v.Name, v.Severity, v.Channel)
+			err = m.addProcessInternal(v.Pid, v.Name, v.MaxMemUsage, v.Severity, v.Channel)
 			if err != nil {
 				stateModified = true
 
@@ -65,6 +66,7 @@ func (m *Module) saveState() error {
 		toSave[idx] = ProcessWatcherStateItem{
 			Pid             : v.Pid,
 			Name            : v.Name,
+			MaxMemUsage     : v.MaxMemUsage,
 			Channel         : v.Channel,
 			Severity        : v.Severity,
 		}

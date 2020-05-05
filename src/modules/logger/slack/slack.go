@@ -70,8 +70,8 @@ func Run(wg sync.WaitGroup) {
 	return
 }
 
-func Info(channel string, timestamp string, msg string) {
-	slackModule.sendSlackNotification(channel, "[INFO]", timestamp, msg)
+func Error(channel string, timestamp string, msg string) {
+	slackModule.sendSlackNotification(channel, "[ERROR]", timestamp, msg)
 	return
 }
 
@@ -80,8 +80,13 @@ func Warn(channel string, timestamp string, msg string) {
 	return
 }
 
-func Error(channel string, timestamp string, msg string) {
-	slackModule.sendSlackNotification(channel, "[ERROR]", timestamp, msg)
+func Info(channel string, timestamp string, msg string) {
+	slackModule.sendSlackNotification(channel, "[INFO]", timestamp, msg)
+	return
+}
+
+func Debug(channel string, timestamp string, msg string) {
+	slackModule.sendSlackNotification(channel, "[DEBUG", timestamp, msg)
 	return
 }
 

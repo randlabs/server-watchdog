@@ -60,12 +60,13 @@ type SettingsJSON_EMail_SmtpServer struct {
 }
 
 type SettingsJSON_Processes struct {
-	FriendlyName   string    `json:"name,omitempty"`
-	ExecutableName string    `json:"executableName"`
+	FriendlyName      string `json:"name,omitempty"`
+	ExecutableName    string `json:"executableName"`
 	CommandLineParams string `json:"args,omitempty"`
-	IncludeChilds  bool      `json:"includeChilds,omitempty"`
-	Channel        string    `json:"channel"`
-	Severity       string    `json:"severity,omitempty"`
+	IncludeChilds     bool   `json:"includeChilds,omitempty"`
+	MaxMemUsage       string `json:"maxMem,omitempty"`
+	Channel           string `json:"channel"`
+	Severity          string `json:"severity,omitempty"`
 }
 
 type SettingsJSON_Webs struct {
