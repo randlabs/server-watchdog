@@ -287,11 +287,12 @@ func (m *Module) checkWebs(elapsedTime time.Duration) {
 							m.runSaveState()
 						}
 
-						//notify only if status changed from true to false
-						if oldStatus == 1 && newStatus <= 0 {
+						if (oldStatus == 1 && newStatus <= 0) || (oldStatus <= 0 && newStatus == 1) {
 							if m.r.Acquire() {
 								go func(web *WebItem, newStatus int32) {
 									switch newStatus {
+									case 1:
+										_ = logger.Log(web.Severity, web.Channel, "Site '%s' is up.", web.Url)
 									case 0:
 										_ = logger.Log(web.Severity, web.Channel, "Site '%s' is down.", web.Url)
 									case -1:

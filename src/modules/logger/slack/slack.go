@@ -107,7 +107,7 @@ func (module *Module) sendSlackNotification(channel string, title string, timest
 	}
 
 	//do notification
-	go func(slackChannel string, timestamp string, msg string) {
+	go func(slackChannel string, channel string, timestamp string, msg string) {
 		var msgBody []byte
 		var req *http.Request
 		var resp *http.Response
@@ -117,7 +117,7 @@ func (module *Module) sendSlackNotification(channel string, title string, timest
 		_ = timestamp // avoid declared and not used
 
 		msgBody, _ = json.Marshal(SlackRequestBody{
-			Text: title + " " + settings.Config.Name + ": " + msg,
+			Text: title + " " + settings.Config.Name + " / " + channel + ": " + msg,
 		})
 
 TryAgain:
@@ -189,5 +189,5 @@ TryAgain:
 		}
 
 		module.wg.Done()
-	}(ch.Slack.Channel, timestamp, msg)
+	}(ch.Slack.Channel, channel, timestamp, msg)
 }
