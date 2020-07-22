@@ -44,6 +44,7 @@ Runs the server monitoring tool as a standalone application.
 	"name": "Watchdog Demo",
 	"server": {
 		"port": 3004,
+		"bindAll": false,
 		"apiKey": "set-some-key"
 	},
 	"log": {
@@ -145,6 +146,10 @@ Defines server parameters.
 ##### `server.port`
 
 The socket port number for listening for incoming connections.
+
+##### `server.bindAll`
+
+True, to bind the listening socket to all interfaces.
 
 ##### `server.apiKey`
 

@@ -12,8 +12,9 @@ import (
 type SettingsJSON struct {
 	Name string `json:"name,omitempty"`
 	Server struct {
-		Port   uint   `json:"port"`
-		ApiKey string `json:"apiKey"`
+		Port    uint `json:"port"`
+		BindAll bool `json:"bindAll,omitempty"`
+		ApiKey  string `json:"apiKey"`
 	} `json:"server"`
 	Log struct {
 		Folder       string `json:"folder"`

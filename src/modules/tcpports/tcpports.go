@@ -205,23 +205,24 @@ func (m *Module) checkTcpPorts(elapsedTime time.Duration) {
 							wg.Add(1)
 
 							go func(port *TcpPortItem, portNum uint32, pIdx int) {
-								conn, err := net.DialTimeout("tcp", net.JoinHostPort(port.Address, fmt.Sprint(portNum)), port.Timeout)
+								conn, err := net.DialTimeout("tcp", net.JoinHostPort(
+									port.Address,
+									fmt.Sprint(portNum)),
+									port.Timeout,
+								)
 								if err == nil {
 									status[pIdx] = true
 								} else {
 									status[pIdx] = false
-								}
-								if conn != nil {
-									defer conn.Close()
+									_ = conn.Close()
 								}
 
 								wg.Done()
 							}(port, portNum, pIdx)
 
 							pIdx++
-
-							wg.Wait()
 						}
+						wg.Wait()
 
 						upDownDetected := 0
 
