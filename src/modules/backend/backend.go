@@ -26,7 +26,7 @@ func Start() error {
 	var err error
 
 	module = &Module{}
-	module.svr, err = server.Create(settings.Config.Server.Port, false)
+	module.svr, err = server.Create(settings.Config.Server.Port, settings.Config.Server.BindAll, false)
 	if err != nil {
 		module = nil
 		return err

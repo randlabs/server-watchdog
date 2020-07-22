@@ -41,7 +41,7 @@ var strApplicationJSON = []byte("application/json")
 
 //------------------------------------------------------------------------------
 
-func Create(port uint, compress bool) (*Server, error) {
+func Create(port uint, bindToAll bool, compress bool) (*Server, error) {
 	var server *Server
 	var fastserver fasthttp.Server
 	var gracefulListener net.Listener
@@ -74,10 +74,16 @@ func Create(port uint, compress bool) (*Server, error) {
 	}
 
 	// create listener
+	addr := "127.0.0.1"
+	if bindToAll {
+		addr = "0.0.0.0"
+	}
+	addr = addr + ":" + strconv.Itoa(int(port))
+
 	if runtime.GOOS == "windows" {
-		listener, err = net.Listen("tcp4", "0.0.0.0:" + strconv.Itoa(int(port)))
+		listener, err = net.Listen("tcp4", addr)
 	} else {
-		listener, err = reuseport.Listen("tcp4", "0.0.0.0:" + strconv.Itoa(int(port)))
+		listener, err = reuseport.Listen("tcp4", addr)
 	}
 	if err != nil {
 		return nil, err

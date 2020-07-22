@@ -205,26 +205,26 @@ func (m *Module) checkTcpPorts(elapsedTime time.Duration) {
 							wg.Add(1)
 
 							go func(port *TcpPortItem, portNum uint32, pIdx int) {
-								conn, err := net.DialTimeout("tcp", net.JoinHostPort(port.Address, fmt.Sprint(portNum)), port.Timeout)
+								conn, err := net.DialTimeout("tcp", net.JoinHostPort(
+									port.Address,
+									fmt.Sprint(portNum)),
+									port.Timeout,
+								)
 								if err == nil {
 									status[pIdx] = true
 								} else {
 									status[pIdx] = false
-								}
-								if conn != nil {
-									defer conn.Close()
+									_ = conn.Close()
 								}
 
 								wg.Done()
 							}(port, portNum, pIdx)
 
 							pIdx++
-
-							wg.Wait()
 						}
+						wg.Wait()
 
-						dropDetected := false
-						doSave := false
+						upDownDetected := 0
 
 						port.LastCheckStatusLock.Lock()
 
@@ -235,13 +235,12 @@ func (m *Module) checkTcpPorts(elapsedTime time.Duration) {
 
 							if status[pIdx] {
 								if !port.LastCheckStatus.Contains(portNum) {
-									doSave = true
+									upDownDetected = 1
 									port.LastCheckStatus.Add(portNum)
 								}
 							} else {
 								if port.LastCheckStatus.Contains(portNum) {
-									dropDetected = true
-									doSave = true
+									upDownDetected = -1
 									port.LastCheckStatus.Remove(portNum)
 								}
 							}
@@ -251,18 +250,23 @@ func (m *Module) checkTcpPorts(elapsedTime time.Duration) {
 
 						port.LastCheckStatusLock.Unlock()
 
-						if doSave {
+						if upDownDetected != 0 {
 							m.runSaveState()
 						}
 
 						//notify only if status changed from true to false
-						if dropDetected {
+						if upDownDetected != 0 {
 							if m.r.Acquire() {
-								go func(port *TcpPortItem) {
-									_ = logger.Log(port.Severity, port.Channel, "TCP Ports of group '%s' are down.", port.Name)
+								go func(port *TcpPortItem, upDownDetected int) {
+									if upDownDetected == 1 {
+										_ = logger.Log(port.Severity, port.Channel, "TCP Ports of group '%s' are up.", port.Name)
+									} else {
+										_ = logger.Log(port.Severity, port.Channel, "TCP Ports of group '%s' are down.", port.Name)
+									}
+
 
 									m.r.Release()
-								}(port)
+								}(port, upDownDetected)
 							}
 						}
 
