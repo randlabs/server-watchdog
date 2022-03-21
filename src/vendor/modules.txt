@@ -2,6 +2,8 @@
 github.com/RoaringBitmap/roaring
 # github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d
 github.com/StackExchange/wmi
+# github.com/andybalholm/brotli v1.0.4
+github.com/andybalholm/brotli
 # github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a
 github.com/asaskevich/govalidator
 # github.com/bmatcuk/doublestar v1.2.2
@@ -21,7 +23,7 @@ github.com/golang/snappy
 github.com/gookit/color
 # github.com/kardianos/service v1.0.0
 github.com/kardianos/service
-# github.com/klauspost/compress v1.9.7
+# github.com/klauspost/compress v1.15.0
 github.com/klauspost/compress/flate
 github.com/klauspost/compress/gzip
 github.com/klauspost/compress/zlib
@@ -47,12 +49,12 @@ github.com/shirou/gopsutil/process
 github.com/tinylib/msgp/msgp
 # github.com/valyala/bytebufferpool v1.0.0
 github.com/valyala/bytebufferpool
-# github.com/valyala/fasthttp v1.5.0
+# github.com/valyala/fasthttp v1.34.0
 github.com/valyala/fasthttp
 github.com/valyala/fasthttp/fasthttputil
 github.com/valyala/fasthttp/reuseport
 github.com/valyala/fasthttp/stackless
-# github.com/valyala/tcplisten v0.0.0-20161114210144-ceec8f93295a
+# github.com/valyala/tcplisten v1.0.0
 github.com/valyala/tcplisten
 # github.com/vmihailenco/msgpack/v4 v4.2.1
 github.com/vmihailenco/msgpack/v4
@@ -63,9 +65,10 @@ github.com/vmihailenco/tagparser/internal
 github.com/vmihailenco/tagparser/internal/parser
 # github.com/willf/bitset v1.1.10
 github.com/willf/bitset
-# golang.org/x/net v0.0.0-20190923162816-aa69164e4478
+# golang.org/x/net v0.0.0-20220225172249-27dd8689420f
 golang.org/x/net/context
-# golang.org/x/sys v0.0.0-20191115151921-52ab43148777
+# golang.org/x/sys v0.0.0-20220227234510-4e6760a101f9
+golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 golang.org/x/sys/windows/registry
